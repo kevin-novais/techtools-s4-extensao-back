@@ -1,0 +1,18 @@
+export const StatusVendas = {
+    CADASTRO: "CADASTRO",
+    PENDENTE: "PENDENTE",
+    AGUARDANDO: "AGUARDANDO",
+    PROCESSANDO: "PROCESSANDO",
+    ERRO_PROC: "ERRO_PROC",
+    ERRO_FATURA: "ERRO_FATURA",
+    INTEG_SAP: "INTEG_SAP",
+    ERRO_INTEG_SAP: "ERRO_INTEG_SAP",
+    AGUARDANDO_BOLETO: "AGUARDANDO_BOLETO",
+    ERRO_BOLETO: "ERRO_BOLETO",
+    ENVIANDO_EMAIL: "ENVIANDO_EMAIL",
+    ERRO_EMAIL: "ERRO_EMAIL",
+    CONCLUIDO: "CONCLUIDO",
+    CANCELADO: "CANCELADO",
+} as const;
+
+export type StatusVendas = typeof StatusVendas[keyof typeof StatusVendas];

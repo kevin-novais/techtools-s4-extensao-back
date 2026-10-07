@@ -1,0 +1,211 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../node_modules/@prisma/client-dotz-stage"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DOTZ_STAGE_DATABASE_URL")
+}
+
+model OCRD {
+  U_CODDOTZ        Int?
+  CardName         String?   @db.NVarChar(100)
+  CardType         String?   @default("F", map: "DF_OCRD_CardType") @db.Char(1)
+  CreateDate       DateTime? @db.DateTime
+  U_POS_ESTAB      String?   @db.NVarChar(30)
+  U_COD_ESTAB      String?   @db.NVarChar(30)
+  U_COD_ESTAB1     String?   @db.NVarChar(30)
+  U_COD_ESTAB2     String?   @db.NVarChar(30)
+  CardCode         String    @id(map: "OCRD_PRIMARY") @db.NVarChar(50)
+  UpdateDate       DateTime? @db.DateTime
+  UpdateTS         Int?
+  ativo            Boolean   @default(true, map: "DF_OCRD_ativo")
+  cnpj             String?   @db.NVarChar(20)
+  email            String?   @db.NVarChar(200)
+  grupo String?   @db.NVarChar(50)
+  CODIGO_PAI   String?   @db.NVarChar(100)
+  ie             String?   @db.NVarChar(9)
+  endereco       String?   @db.NVarChar(200)
+  municipio      String?   @db.Char(100)
+  cep            String?   @db.Char(8)
+  FORMA_PAGAMENTO String?   @db.NVarChar(8)
+  TIPO_INDUSTRIA String?   @db.NVarChar(10)
+  DESCRICAO_INDUSTRIA String?   @db.NVarChar(100)
+  telefone       String?   @db.NVarChar(20)
+  OPOR OPOR[]
+}
+
+model REFDOTZ {
+  Code           Int
+  U_PEDCOMPRA    Int
+  U_EMISSAO      DateTime? @db.DateTime
+  U_PARCEIRO     String?   @db.NVarChar(100)
+  U_CLIENTE      String?   @db.NVarChar(100)
+  U_PONTOS       Int
+  U_CCCUSTO      String?   @db.NVarChar(7)
+  U_TIPO         String?   @db.NVarChar(10)
+  U_STATUS       String    @db.Char(1)
+  U_IDPARCEIRO   Int
+  U_TIPOOPOUTROS String?   @db.NVarChar(10)
+
+  @@id([U_PEDCOMPRA, Code], map: "CODE_PR")
+  @@index([U_TIPOOPOUTROS], map: "Missing_RefDotz_U_TIPOOPOUTROS")
+  @@map("@REFDOTZ")
+}
+
+model OITM {
+  ItemCode            String  @id(sort: Desc, map: "OITM_PRIMARY") @db.NVarChar(20)
+  ItemName            String  @db.NVarChar(100)
+  FrgnName            String? @db.NVarChar(100)
+  SuppCatNum          String? @db.NVarChar(17)
+  Deleted             String? @default("N", map: "DF_OITM_Deleted") @db.Char(1)
+  U_Seidor_PC_Calcula Int?    @default(2, map: "DF_OITM_PC_Calcula")
+  U_Seidor_PC_Analisa Int?    @default(2, map: "DF_OITM_PC_Analisa")
+
+  POR1 POR1[]
+}
+
+model OPOR {
+  DocNum               Int
+  CANCELED             String?   @default("N", map: "DF_OPOR_CANCELED") @db.Char(1)
+  DocStatus            String?   @default("O", map: "DF_OPOR_DocStatus") @db.Char(1)
+  DocDate              DateTime? @db.DateTime
+  DocDueDate           DateTime? @db.DateTime
+  CardCode             String?   @db.NVarChar(50)
+  CardName             String?   @db.NVarChar(100)
+  DiscPrcnt            Decimal?  @db.Decimal(19, 6)
+  DocTotal             Decimal?  @db.Decimal(19, 6)
+  CreateDate           DateTime? @db.DateTime
+  U_DOTZNRPED          Int?
+  U_DFATIDPAR          String?   @db.NVarChar(15)
+  U_DOTZNRREVERSAO     Int?
+  U_ArqImportID        Int?
+  U_DATA_ORIGEM_PEDIDO DateTime? @db.DateTime
+  U_DOTZ_TIPO          String?   @db.NVarChar(30)
+  U_DOTZ_ORGTROCA      String?   @db.NVarChar(10)
+  DocEntry             Int       @id(map: "OPOR_PRIMARY") @default(autoincrement())
+
+  OCRD   OCRD?   @relation(fields: [CardCode], references: [CardCode])
+  POR1   POR1[]
+  POR2   POR2[]
+
+  @@index([CardCode, U_DOTZ_TIPO, U_DOTZ_ORGTROCA], map: "IDX_OPOR_CARDCODE_ISNULL_DZTIPO_DZORGTROCA")
+  @@index([DocStatus], map: "Missing_OPOR_DocStatus")
+  @@index([DocEntry, U_DOTZNRPED], map: "OPOR_DocNum_DOTZNRPED")
+  @@index([U_DOTZNRPED], map: "ROX_IDX_OPOR_01")
+}
+
+model POR1 {
+  LineNum          Int
+  LineStatus       String?  @default("O", map: "DF_POR1_LineStatus") @db.Char(1)
+  ItemCode         String?  @db.NVarChar(20)
+  Dscription       String?  @db.NVarChar(100)
+  Quantity         Decimal? @db.Decimal(19, 6)
+  Price            Decimal? @db.Decimal(19, 6)
+  LineTotal        Decimal? @db.Decimal(19, 6)
+  U_PRODUTO        String?  @db.NVarChar(80)
+  U_DOTZPEDFORNC   String?  @db.NVarChar(10)
+  U_DQTDPONTOS     Int?
+  U_DOTZNRREVERSAO Int?
+  U_DocEntryNF     BigInt?
+  U_PEDANALYSER    Int?
+  U_CFPS           String?  @db.NVarChar(50)
+  U_POS_ID         Int?
+  U_S1_POSCLIENTE  String?  @db.NText
+  U_S1_CPF_CLIENTE String?  @db.NVarChar(18)
+  U_SIGLA_ESTAB    String?  @db.NVarChar(10)
+  U_S1_CODEST      String?  @db.NVarChar(10)
+  U_S1_IDFORNE     Int?
+  U_S1_NOME_ESTA   String?  @db.NText
+  U_S1_POS_ESTAB   String?  @db.NText
+  DocEntry         Int
+  CODIGO_CARRINHO  Int?
+
+  OPOR OPOR @relation(fields: [DocEntry], references: [DocEntry])
+  OITM OITM? @relation(fields: [ItemCode], references: [ItemCode])
+
+  @@id([DocEntry, LineNum], map: "OPOR1_PRIMARY")
+  @@index([U_PEDANALYSER], map: "IDX_POR1_UPedAnalyser")
+  @@index([LineStatus], map: "MISSING_POR1_LINESTATUS")
+  @@index([U_DocEntryNF], map: "Missing_U_DocEntryNF")
+  @@index([DocEntry, U_PEDANALYSER, U_DocEntryNF], map: "POR1_U_Docentry_Pedanalyser_DocentryNF")
+  @@index([DocEntry, U_PEDANALYSER], map: "POR1_U_PEDANALYSER_DocEntry")
+}
+
+model Faturamento {
+  Id                     Decimal   @default(dbgenerated()) @db.Decimal(10, 0)
+  OrigemRegistro         String    @db.Char(1)
+  Companhia              String    @db.Char(10)
+  CodigoParceiro         Decimal   @db.Decimal(10, 0)
+  NumeroDocumento        String    @db.VarChar(20)
+  CnpjParceiro           String    @db.VarChar(20)
+  NomeParceiro           String    @db.VarChar(80)
+  NumeroFatura           String    @map("IdDbsFatura") @db.VarChar(30)
+  NumeroFaturaParceiro   String    @db.VarChar(30)
+  DataCriacao            DateTime  @db.DateTime
+  DataEmissao            DateTime  @db.DateTime
+  DataFechamento         DateTime  @db.DateTime
+  PeriodoFechamentoDe    DateTime  @db.DateTime
+  PeriodoFechamentoAte   DateTime  @db.DateTime
+  TipoDadoDescricao      String    @db.VarChar(50)
+  TextoDocumento         String?   @db.VarChar(256)
+  ValorConsumoPeriodo    Decimal   @db.Decimal(15, 2)
+  ValorFaturamentoMinimo Decimal   @db.Decimal(15, 2)
+  ValorSaldoRetroativo   Decimal   @db.Decimal(15, 2)
+  ValorExcedente         Decimal   @db.Decimal(15, 2)
+  ValorEstornosCredito   Decimal   @db.Decimal(15, 2)
+  ValorFatura            Decimal   @db.Decimal(15, 2)
+  CaminhoFaturaDetalhada String?   @db.VarChar(256)
+  CaminhoAnexo2          String?   @db.VarChar(256)
+  CaminhoAnexo3          String?   @db.VarChar(256)
+  CaminhoAnexo4          String?   @db.VarChar(256)
+  CaminhoBoleto          String?   @db.VarChar(256)
+  CaminhoFatura          String?   @db.VarChar(256)
+  StatusRegistro         String    @db.Char(1)
+  DataInclusao           DateTime  @db.DateTime
+  UsuarioInclusao        String    @db.VarChar(50)
+  DataAlteracao          DateTime? @db.DateTime
+  UsuarioAlteracao       String?   @db.VarChar(50)
+  DataReversaoAnalyzer   DateTime? @db.DateTime
+  detalhes               FaturamentoDetalhe[]
+
+  @@id([OrigemRegistro, Id], map: "PkHeader")
+}
+
+model FaturamentoDetalhe {
+  Id                     Decimal  @default(dbgenerated()) @db.Decimal(10, 0)
+  FaturamentoId          Decimal  @db.Decimal(10, 0)
+  OrigemRegistro         String   @db.Char(1)
+  TipoOperacao           String   @db.Char(1)
+  CodigoProduto          String?  @db.VarChar(20)
+  DescricaoProduto       String?  @db.VarChar(200)
+  UnidadeMedida          String   @db.VarChar(5)
+  CodigoPromocao         String?  @db.VarChar(20)
+  DescricaoPromocao      String?  @db.VarChar(200)
+  TipoPonto              String?  @db.VarChar(100)
+  CentroLucro            String?  @db.VarChar(20)
+  CentroCusto            String?  @db.VarChar(20)
+  NumeroTransacoes       Decimal  @db.Decimal(15, 0)
+  QuantidadePontos       Decimal  @db.Decimal(15, 0)
+  CustoUnitarioPonto     Decimal  @db.Decimal(15, 6)
+  ValorTotalItem         Decimal  @db.Decimal(15, 2)
+  DataInclusao           DateTime @db.DateTime
+  UsuarioInclusao        String   @db.VarChar(50)
+  DataAlteracao          DateTime? @db.DateTime
+  UsuarioAlteracao       String?  @db.VarChar(50)
+
+  faturamento Faturamento @relation(fields: [OrigemRegistro, FaturamentoId], references: [OrigemRegistro, Id], map: "FkDetalheHeader")
+
+  @@id([Id, FaturamentoId, OrigemRegistro], map: "PkDetalhe")
+}
+
+model POR2 {
+  ExpnsCode Int?     @default(1, map: "DF_POR1_ExpnsCode")
+  LineTotal Decimal? @db.Decimal(19, 6)
+  DocEntry  Int      @id(map: "POR2_PRIMARY")
+
+  OPOR OPOR @relation(fields: [DocEntry], references: [DocEntry])
+
+  @@index([DocEntry, ExpnsCode], map: "POR2_DocEntry_ExpnsCode")
+}

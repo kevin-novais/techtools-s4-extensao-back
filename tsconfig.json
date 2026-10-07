@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+      /* Base */
+      "target": "es2021", // JS moderno mas compatível com Node (es2021 inclui replaceAll)
+      "lib": ["es2022", "dom"], // es2022 inclui Array.at(), Object.hasOwn(), etc.
+      "module": "commonjs", // Como você está usando "type": "commonjs"
+      "moduleResolution": "node", // Resolve imports do jeito do Node
+      "esModuleInterop": true, // Permite importar libs CommonJS com 'import'
+      "forceConsistentCasingInFileNames": true, // Evita problemas em sistemas case-sensitive
+      "strict": true, // Boa prática: habilita type-check rigoroso
+      "skipLibCheck": true, // Ignora checagem de tipos em node_modules
+      "jsx": "react", // Permite arquivos .tsx com React
+
+      /* Path e saída */
+      "outDir": "./dist", // Código compilado vai para dist/
+      "rootDir": "./src", // Código-fonte dentro de src/
+      "baseUrl": ".",
+      "paths": {
+          "@/*": ["src/*"]
+      },
+
+      /* Imports */
+      "resolveJsonModule": true, // Permite importar arquivos .json
+      "allowSyntheticDefaultImports": true, // Ajuda com libs sem export default
+
+      /* Debug */
+      "sourceMap": true // Gera mapas para debugar TS no Node
+  },
+  "include": ["src"],                         // Compila tudo que está em src/
+  "exclude": ["node_modules", "dist"]         // Ignora build e deps
+}

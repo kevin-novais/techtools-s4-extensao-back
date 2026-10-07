@@ -1,0 +1,1325 @@
+// prisma/s4_extensao_dotz/schema.prisma
+generator client {
+    provider = "prisma-client-js"
+    output   = "../../node_modules/@prisma/client-s4-dotz"
+}
+
+datasource db {
+    provider = "sqlserver"
+    url      = env("DATABASE_URL")
+}
+
+model Usuario {
+    id                                       Int                           @id @default(autoincrement())
+    email                                    String                        @unique
+    nome                                     String
+    senha                                    String
+    perfil                                   String                        @default("USER")
+    ativo                                    Boolean                       @default(true)
+    avatarUrl                                String?
+    atualizadoPor                            Int                           @map("atualizado_por")
+    atualizadoEm                             DateTime                      @default(now()) @map("atualizado_em")
+    tokensReset                              TokenResetSenha[]
+    gruposUsuario                            UsuarioGrupoUsuario[]
+    ciasAtualizadas                          Cia[]                         @relation("CiaAtualizadaPor")
+    gruposUsuarioAtualizados                 GrupoUsuario[]                @relation("GrupoUsuarioAtualizadoPor")
+    usuarioGruposAtualizados                 UsuarioGrupoUsuario[]         @relation("UsuarioGrupoAtualizadoPor")
+    documentoFiscalHeadersAtualizados        DocumentoFiscalHeader[]       @relation("DocumentoFiscalHeaderAtualizadoPor")
+    documentoFiscalHeadersCriados            DocumentoFiscalHeader[]       @relation("DocumentoFiscalHeaderCriadoPor")
+    documentosFiscaisAprovados                DocumentoFiscalHeader[]       @relation("DocumentoFiscalHeaderAprovadoPor")
+    configuracoesContabilAtualizadas         ConfiguracaoContabil[]        @relation("ConfiguracaoContabilAtualizadoPor")
+    configuracoesContabilCriadas             ConfiguracaoContabil[]        @relation("ConfiguracaoContabilCriadoPor")
+    configuracoesContabilDetalhesAtualizadas     ConfiguracaoContabilDetalhe[]     @relation("ConfiguracaoContabilDetalheAtualizadoPor")
+    configuracoesContabilDetalhesCriadas         ConfiguracaoContabilDetalhe[]     @relation("ConfiguracaoContabilDetalheCriadoPor")
+    configuracoesContabilDetalhesPontoAtualizadas ConfiguracaoContabilDetalhePonto[] @relation("ConfiguracaoContabilDetalhePontoAtualizadoPor")
+    configuracoesContabilDetalhesPontoCriadas     ConfiguracaoContabilDetalhePonto[] @relation("ConfiguracaoContabilDetalhePontoCriadoPor")
+    relatoriosCriados                        Relatorio[]                   @relation("RelatorioCriadoPor")
+    relatoriosAtualizados                    Relatorio[]                   @relation("RelatorioAtualizadoPor")
+    execucoesRelatorio                       RelatorioExecucaoLog[]        @relation("ExecucaoPor")
+    fluxoCaixaCiaParceirosCriados            FluxoCaixaCiaParceiro[]       @relation("FluxoCaixaCiaParceiroCriadoPor")
+    fluxoCaixaCiaParceirosAtualizados        FluxoCaixaCiaParceiro[]       @relation("FluxoCaixaCiaParceiroAtualizadoPor")
+    fluxoCaixaCiaTipoLancamentosCriados      FluxoCaixaCiaTipoLancamento[] @relation("FluxoCaixaCiaTipoLancamentoCriadoPor")
+    fluxoCaixaCiaTipoLancamentosAtualizados  FluxoCaixaCiaTipoLancamento[] @relation("FluxoCaixaCiaTipoLancamentoAtualizadoPor")
+
+    @@index([nome, email])
+    @@index([perfil])
+    @@index([ativo])
+    @@map("usuarios")
+}
+
+model TokenResetSenha {
+    id        Int      @id @default(autoincrement())
+    usuarioId Int      @map("usuario_id")
+    token     String   @unique
+    expiraEm  DateTime @map("expira_em")
+    usado     Boolean  @default(false)
+    criadoEm  DateTime @default(now()) @map("criado_em")
+
+    usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+    @@index([token])
+    @@index([usuarioId])
+    @@index([expiraEm])
+    @@index([usado])
+    @@map("tokens_reset_senha")
+}
+
+model Cia {
+    id            Int            @id @default(autoincrement())
+    nome          String
+
+    ciaIdSAP      String?        @map("cia_id_sap") @db.NVarChar(100)
+    nomeBaseDadosB1 String?      @map("nome_base_dados_b1") @db.NVarChar(128)
+
+    ie            String?        @map("ie") @db.NVarChar(9)
+    endereco      String?        @map("endereco") @db.NVarChar(200)
+    municipio     String?        @map("municipio") @db.NVarChar(100)
+    uf            String?        @map("uf") @db.NVarChar(2)
+    cep           String?        @map("cep") @db.NVarChar(8)
+    bairro        String?        @map("bairro") @db.NVarChar(100)
+    cpfCnpj       String?        @map("cpf_cnpj") @db.NVarChar(14)
+    telefone      String?        @map("telefone") @db.NVarChar(20)
+
+    atualizadoEm  DateTime       @default(now()) @map("atualizado_em")
+    atualizadoPor Int            @map("atualizado_por")
+    deletadoEm    DateTime?      @map("deletado_em")
+    gruposUsuario GrupoUsuario[]
+
+    atualizadoPorUsuario   Usuario                 @relation("CiaAtualizadaPor", fields: [atualizadoPor], references: [id], onDelete: NoAction, onUpdate: NoAction)
+    documentoFiscalHeaders DocumentoFiscalHeader[]
+    configuracoesContabil  ConfiguracaoContabil[]
+
+
+    @@index([nome])
+    @@index([atualizadoPor])
+    @@index([deletadoEm])
+    @@map("cia")
+}
+
+model GrupoUsuario {
+    id                Int                   @id @default(autoincrement())
+    ciaId             Int                   @map("cia_id")
+    nome              String                @unique
+    dataInicio        DateTime              @map("data_inicio") @db.Date
+    dataFim           DateTime              @map("data_fim") @db.Date
+    aprovaDivergencia Boolean               @map("aprova_divergencia")
+    atualizadoEm      DateTime              @default(now()) @map("atualizado_em")
+    atualizadoPor     Int                   @map("atualizado_por")
+    deletadoEm        DateTime?             @map("deletado_em")
+    usuarios          UsuarioGrupoUsuario[]
+
+    cia                  Cia     @relation(fields: [ciaId], references: [id])
+    atualizadoPorUsuario Usuario @relation("GrupoUsuarioAtualizadoPor", fields: [atualizadoPor], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+    @@index([ciaId])
+    @@index([ciaId, deletadoEm])
+    @@index([dataInicio])
+    @@index([dataFim])
+    @@index([atualizadoPor])
+    @@index([deletadoEm])
+    @@map("grupo_usuario")
+}
+
+model UsuarioGrupoUsuario {
+    usuarioId      Int      @map("usuario_id")
+    grupoUsuarioId Int      @map("grupo_usuario_id")
+    atualizadoEm   DateTime @default(now()) @map("atualizado_em")
+    atualizadoPor  Int      @map("atualizado_por")
+
+    usuario              Usuario      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+    grupoUsuario         GrupoUsuario @relation(fields: [grupoUsuarioId], references: [id], onDelete: Cascade)
+    atualizadoPorUsuario Usuario      @relation("UsuarioGrupoAtualizadoPor", fields: [atualizadoPor], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+    @@id([usuarioId, grupoUsuarioId])
+    @@index([usuarioId])
+    @@index([grupoUsuarioId])
+    @@index([atualizadoPor])
+    @@map("usuario_grupo_usuario")
+}
+
+/**
+ * # Documento Fiscal Header
+ * - CODIGO_FORNECEDOR_SAP ( Pegar a primera linha da coluna PEDIDO_PARCEIRO e  por esse número buscar no stage o Código do fornecedor SAP)
+ * - CODIGO_FORNECEDOR_ ANALYZER: (Buscar na tabela OCRD depois que buscar o código do fornacedor SAP. validar se não na mesma tabela que vamos buscar o código SAP).
+ * - CODIGO_DOCUMENTO ( Pegar a primera linha da coluna NFVENDA na planilha de romaneio)
+ * - TipoDocumento: Valores permitidos: "ROMANEIO" | "POS" ( Padrão: "ROMANEIO" )
+ * - TipoDocumentoERP: Preenchido pela configuração contábil. Campo de texto livre (máximo 20 caracteres)
+ * - Status: Valores permitidos: AGUARDANDO, PROCESSANDO, ERRO_PROCESSAMENTO, APROVADO, REPROVADO, DIVERGENCIA, INTEGRADO, ERRO_INTEGRACAO. ( Padrão: "AGUARDANDO" ).
+ * - DATA_EMISSAO: O usuário deve informar a data de emissão do documento fiscal.
+ * - DATA_LANCAMENTO_CONTABIL: O usuário deve informar a data de lançamento contábil do documento fiscal.
+ */
+
+model DocumentoFiscalHeader {
+    id                       Int    @id @default(autoincrement()) @map("id")
+    ciaId                    Int    @map("cia_id")
+    codigoFornecedorSAP      String? @map("codigo_fornecedor_sap")
+    codigoFornecedorAnalyzer String? @map("codigo_fornecedor_analyzer")
+    codigoDocumento          String @map("codigo_documento") @db.NVarChar(100)
+    tipoDocumentoERP         String @default("TP_ROM") @map("tipo_documento_erp")
+    tipoContabilERP          String? @map("tipo_contabil_erp") @db.VarChar(20)
+    codigoDocumentoERP       String? @map("codigo_documento_erp") @db.NVarChar(20) /// Vem da integração com o SAP
+    status                   String @default("AGUARDANDO") @map("status") @db.NVarChar(30)
+    romaneioUrl              String? @map("romaneio_url") /// Opcional: Romaneio tem arquivo XLSX, POS não tem arquivo de origem. Path relativo no storage.
+    romaneioFileName         String? @map("romaneio_file_name") @db.NVarChar(255) /// Nome do arquivo tratado (sem caracteres inválidos p/ URL) + hash de deduplicação; usado para montar a URL pública de anexo enviada ao SAP
+    nomeRomaneio             String? @map("nome_romaneio") @db.NVarChar(255) /// Nome original do arquivo de romaneio de origem (exibição): um arquivo gera um header por código de documento (NFVENDA)
+
+    observacoesRomaneio      String? @map("observacoes_romaneio") @db.NVarChar(Max) /// Vai ser utilizado para armazenar observações do romaneio quando forem aprovados ou reprovados
+    dataAprovacaoRomaneio    DateTime? @map("data_aprovacao_romaneio") @db.Date /// Data de aprovação do romaneio quando forem aprovados ou reprovados
+    aprovadoPorUsuarioId     Int? @map("aprovado_por_usuario_id") /// Id do usuário que aprovou o romaneio quando forem aprovados ou reprovados
+    aprovadoPorUsuario Usuario? @relation("DocumentoFiscalHeaderAprovadoPor", fields: [aprovadoPorUsuarioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+
+    dataEmissao            DateTime  @map("data_emissao") @db.Date
+    dataLancamentoContabil DateTime  @map("data_lancamento_contabil") @db.Date
+    ano                    Int       @default(dbgenerated("datepart(year,getdate())")) @map("ano")
+    dataVencimento         DateTime?  @map("data_vencimento") @db.Date
+    dataProcessamentoInicio DateTime? @map("data_processamento_inicio")
+    dataProcessamentoFim    DateTime? @map("data_processamento_fim")
+    dataIntegracao         DateTime? @map("data_integracao")
+
+    quantidadeTotalPedidos Int? @map("quantidade_total_pedidos")
+
+    valorTotalProdutos Decimal? @map("valor_total_produtos") @db.Decimal(19,2) /// Valor total dos produtos (Vem no arquivo Romaneio xlsx no campo VLPROD) Vai ter que somar o valor de todos os produtos
+    valorTotalPedido Decimal? @map("valor_total_pedido") @db.Decimal(19,2) /// Valor total do pedido (Vem no arquivo Romaneio xlsx no campo VLRPEDIDO) Vai ter que somar o valor de todos os pedidos
+    valorTotalFrete Decimal? @map("valor_total_frete") @db.Decimal(19,2) /// Valor total do frete (Vem no arquivo Romaneio xlsx no campo VLFRETE) Vai ter que somar o valor de todos os fretes
+    valorTotalCombo Decimal? @map("valor_total_combo") @db.Decimal(19,2) /// Valor total dos combos (Vem no arquivo Romaneio xlsx no campo VLCOMBO) Vai ter que somar o valor de todos os combos
+
+    valorTotalProdutosAnalyzer Decimal? @map("valor_total_produtos_analyzer") @db.Decimal(19,2) /// Valor total dos produtos no analyzer
+    valorTotalPedidoAnalyzer Decimal? @map("valor_total_pedido_analyzer") @db.Decimal(19,2) /// Valor total do pedido no analyzer
+    valorTotalFreteAnalyzer Decimal? @map("valor_total_frete_analyzer") @db.Decimal(19,2) /// Valor total do frete no analyzer
+    valorTotalComboAnalyzer Decimal? @map("valor_total_combo_analyzer") @db.Decimal(19,2) /// Valor total dos combos no analyzer
+
+    valorTotalIs Decimal? @map("valor_total_is") @db.Decimal(19,2)
+    valorTotalCbs Decimal? @map("valor_total_cbs") @db.Decimal(19,2)
+    valorTotalIbsUf Decimal? @map("valor_total_ibs_uf") @db.Decimal(19,2)
+    valorTotalIbsMunicipal Decimal? @map("valor_total_ibs_municipal") @db.Decimal(19,2)
+
+
+    filtrosPosJson String? @map("filtros_pos_json") @db.NVarChar(Max) /// JSON dos filtros usados na criação do documento POS (para reprocessamento)
+
+    documentoJson String? @map("documento_json") @db.NVarChar(Max) /// JSON do envelope de envio ao SAP (createJournalEntry): ver payloadEnvioSap na API
+
+    posRelatorioPdfUrl String? @map("pos_relatorio_pdf_url") @db.NVarChar(1000) /// Path relativo no storage do relatório PDF gerado para o POS
+    posRelatorioPdfFileName String? @map("pos_relatorio_pdf_file_name") @db.NVarChar(255) /// Nome do arquivo tratado + hash; usado para montar a URL pública de anexo enviada ao SAP
+    posRelatorioXlsxUrl String? @map("pos_relatorio_xlsx_url") @db.NVarChar(1000) /// Path relativo no storage do relatório XLSX gerado para o POS
+    posRelatorioXlsxFileName String? @map("pos_relatorio_xlsx_file_name") @db.NVarChar(255) /// Nome do arquivo tratado + hash; usado para montar a URL pública de anexo enviada ao SAP
+
+    retornoIntegracaoSap String? @map("retorno_integracao_sap") @db.NVarChar(Max) /// JSON do retorno da integração SAP (createJournalEntry): status, corpo da API e metadados
+
+    criadoPor     Int      @map("criado_por")
+    criadoEm      DateTime @default(now()) @map("criado_em")
+    atualizadoPor Int      @map("atualizado_por")
+    atualizadoEm  DateTime @default(now()) @map("atualizado_em")
+    
+
+    cia                  Cia                   @relation(fields: [ciaId], references: [id])
+    atualizadoPorUsuario Usuario               @relation("DocumentoFiscalHeaderAtualizadoPor", fields: [atualizadoPor], references: [id], onDelete: NoAction, onUpdate: NoAction)
+    criadoPorUsuario     Usuario               @relation("DocumentoFiscalHeaderCriadoPor", fields: [criadoPor], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+    documentoFiscalDetalhes DocumentoFiscalDetalhe[]
+    documentoFiscalPontos   DocumentoFiscalPonto[]
+
+    @@unique([ciaId, codigoDocumento, tipoDocumentoERP])
+    @@index([ciaId])
+    @@index([codigoFornecedorSAP])
+    @@index([codigoFornecedorAnalyzer])
+    @@index([codigoDocumento])
+    @@index([ciaId, ano])
+    @@index([criadoPor])
+    @@index([criadoEm])
+    @@index([atualizadoPor])
+    @@index([atualizadoEm])
+    @@map("documento_fiscal_header")
+}
+
+
+model DocumentoFiscalDetalhe {
+    id                       Int    @id @default(autoincrement()) @map("id")
+    documentoFiscalHeaderId  Int    @map("documento_fiscal_header_id")
+    codigoDocumento          String @map("codigo_documento") @db.NVarChar(100)
+    codigoFornecedorSAP      String? @map("codigo_fornecedor_sap") @db.NVarChar(50) /// Código do fornecedor SAP do pedido (Vem do pedidoAnalyzer.CardCode)
+    codigoDocumentoERP         String? @map("codigo_documento_erp") @db.NVarChar(20) /// Vem da integração com o SAP)
+
+    itemDocumento Int? @map("item_documento") /// Sequêncial com ordem do pedido dentro do romaneio
+    codigoProdutoDotz String? @map("codigo_produto_dotz") @db.NVarChar(20) // Vem da  tabela OITM.itemCode
+    codigoProdutoFornecedor String? @map("codigo_produto_fornecedor") @db.NVarChar(17)  // Vem da tabela OITM.SuppCatNum
+    codigoProdutoRomaneio String? @map("codigo_produto_romaneio") @db.NVarChar(20) // Vem da tabela Romaneio xlsx no campo PRODUTO
+
+
+    quantidadeProduto Int? @map("quantidade_produto_romaneio") /// Quantidade do produto (Vem no arquivo Romaneio xlsx no campo QTDPROD)
+    descricaoProduto String? @map("descricao_produto_romaneio") /// Descrição do produto (Vem no arquivo Romaneio xlsx no campo DESCRICAO)
+    valorProduto Decimal? @map("valor_produto_romaneio") @db.Decimal(19,2) /// Valor do produto (Vem no arquivo Romaneio xlsx no campo VLPROD)
+    valorPedido Decimal? @map("valor_pedido_romaneio") @db.Decimal(19,2) /// Valor do pedido (Vem no arquivo Romaneio xlsx no campo VLRPEDIDO)
+    valorFrete Decimal? @map("valor_frete_romaneio") @db.Decimal(19,2) /// Valor do frete (Vem no arquivo Romaneio xlsx no campo VLFRETE)
+    valorCombo Decimal? @map("valor_combo_romaneio") @db.Decimal(19,2) /// Valor do combo (Vem no arquivo Romaneio xlsx no campo COMBO)
+
+    codigoPedidoParceiro String? @map("codigo_pedido_parceiro") @db.NVarChar(50) /// Pedido do parceiro (Vem no arquivo Romaneio xlsx no campo PEDIDO_PARCEIRO)
+    codigoPedidoAnalyzer String? @map("codigo_pedido_analyzer") @db.NVarChar(50) /// DocEntry do pedido (Vem da tabela OPOR do Analyzer)
+
+    divergencias Boolean? @map("divergencias") @default(false) /// Divergências do detalhe do documento fiscal
+
+    grupoPisCofins         String? @map("grupo_pis_cofins") @db.NVarChar(1) // Grupo PIS/COFINS (Vem da tabela OITM.OITM.U_Seidor_PC_Calcula 1 = S, 2 = N ou null)
+    
+    configuracaoContabilDetalheId Int? @map("configuracao_contabil_detalhe_id")
+
+    configuracaoContabilDetalhe ConfiguracaoContabilDetalhe? @relation(fields: [configuracaoContabilDetalheId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+    // Processo Configuracao Contabil
+
+    contaContabilCreditoCusto String? @map("conta_contabil_credito_custo") @db.NVarChar(20) /// Vem da tabela ConfiguracaoContabilDetalhe.contaCreditoValorProduto
+    contaContabilDebitoCusto String? @map("conta_contabil_debito_custo") @db.NVarChar(20) /// Vem da tabela ConfiguracaoContabilDetalhe.contaDebitoValorProduto
+
+    contaContabilCreditoFrete String? @map("conta_contabil_credito_frete") @db.NVarChar(20) /// Vem da tabela ConfiguracaoContabilDetalhe.contaCreditoValorFrete
+    contaContabilDebitoFrete String? @map("conta_contabil_debito_frete") @db.NVarChar(20) /// Vem da tabela ConfiguracaoContabilDetalhe.contaDebitoValorFrete
+
+    contaContabilCreditoCombo String? @map("conta_contabil_credito_combo") @db.NVarChar(20) /// Vem da tabela ConfiguracaoContabilDetalhe.contaCreditoValorCombo
+    contaContabilDebitoCombo String? @map("conta_contabil_debito_combo") @db.NVarChar(20) /// Vem da tabela ConfiguracaoContabilDetalhe.contaDebitoValorCombo
+
+    contaContabilCreditoPis String? @map("conta_contabil_credito_pis") @db.NVarChar(20) /// Vem da tabela ConfiguracaoContabilDetalhe.contaCreditoPis
+    contaContabilDebitoPis String? @map("conta_contabil_debito_pis") @db.NVarChar(20) /// Vem da tabela ConfiguracaoContabilDetalhe.contaDebitoPis
+
+    contaContabilCreditoCofins String? @map("conta_contabil_credito_cofins") @db.NVarChar(20) /// Vem da tabela ConfiguracaoContabilDetalhe.contaCreditoCofins
+    contaContabilDebitoCofins String? @map("conta_contabil_debito_cofins") @db.NVarChar(20) /// Vem da tabela ConfiguracaoContabilDetalhe.contaDebitoCofins
+
+    contaContabilCreditoValorIs String? @map("conta_contabil_credito_valor_is") @db.NVarChar(20) /// Vem da tabela ConfiguracaoContabilDetalhe.contaCreditoValorIs
+    contaContabilDebitoValorIs String? @map("conta_contabil_debito_valor_is") @db.NVarChar(20) /// Vem da tabela ConfiguracaoContabilDetalhe.contaDebitoValorIs
+
+    contaContabilCreditoValorCbs String? @map("conta_contabil_credito_valor_cbs") @db.NVarChar(20) /// Vem da tabela ConfiguracaoContabilDetalhe.contaCreditoValorCbs
+    contaContabilDebitoValorCbs String? @map("conta_contabil_debito_valor_cbs") @db.NVarChar(20) /// Vem da tabela ConfiguracaoContabilDetalhe.contaDebitoValorCbs
+
+    contaContabilCreditoValorIbsUf String? @map("conta_contabil_credito_valor_ibs_uf") @db.NVarChar(20) /// Vem da tabela ConfiguracaoContabilDetalhe.contaCreditoValorIbsUf
+    contaContabilDebitoValorIbsUf String? @map("conta_contabil_debito_valor_ibs_uf") @db.NVarChar(20) /// Vem da tabela ConfiguracaoContabilDetalhe.contaDebitoValorIbsUf
+    
+    contaContabilCreditoValorIbsMunicipal String? @map("conta_contabil_credito_valor_ibs_municipal") @db.NVarChar(20) /// Vem da tabela ConfiguracaoContabilDetalhe.contaCreditoValorIbsMunicipal
+    contaContabilDebitoValorIbsMunicipal String? @map("conta_contabil_debito_valor_ibs_municipal") @db.NVarChar(20) /// Vem da tabela ConfiguracaoContabilDetalhe.contaDebitoValorIbsMunicipal
+
+    centroCusto String? @map("centro_custo") @db.NVarChar(20) /// Vem da tabela ConfiguracaoContabilDetalhe.centroCusto
+    centroLucro String? @map("centro_lucro") @db.NVarChar(20) /// Vem da tabela ConfiguracaoContabilDetalhe.centroLucro
+
+    valorPisOperacaoCredor Decimal? @map("valor_pis_operacao_credor") @db.Decimal(19,2) /// VALOR_PEDIDO_ROMANEIO * ConfiguracaoContabilDetalhe.aliquotaPis / 100
+    valorCofinsOperacaoCredor Decimal? @map("valor_cofins_operacao_credor") @db.Decimal(19,2) /// VALOR_PEDIDO_ROMANEIO * ConfiguracaoContabilDetalhe.aliquotaCofins / 100
+
+    valorIs Decimal? @map("valor_is") @db.Decimal(19,2) /// Não sabemos ainda
+    valorCbs Decimal? @map("valor_cbs") @db.Decimal(19,2) /// Não sabemos ainda
+    valorIbsUf Decimal? @map("valor_ibs_uf") @db.Decimal(19,2) /// Não sabemos ainda
+    valorIbsMunicipal Decimal? @map("valor_ibs_municipal") @db.Decimal(19,2) /// Não sabemos ainda
+
+    criadoEm DateTime @default(now()) @map("criado_em")
+
+    atualizadoEm DateTime? @default(now()) @map("atualizado_em")
+
+    documentoFiscalHeader DocumentoFiscalHeader @relation(fields: [documentoFiscalHeaderId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+    documentoFiscalErrors DocumentoFiscalErrors[]
+    
+
+    @@index([documentoFiscalHeaderId])
+    @@index([codigoDocumento])
+    @@index([codigoPedidoParceiro])
+    @@index([codigoPedidoAnalyzer], map: "IX_documento_fiscal_detail_pedido_analyzer")
+    @@index([codigoFornecedorSAP])
+    @@map("documento_fiscal_detail")
+}
+
+
+/// Log/snapshot das configurações contábeis de PONTO usadas no cálculo enviado ao SAP
+/// numa troca (DTZ-297). Congela, por documento fiscal, as linhas de
+/// `configuracao_contabil_detail_ponto` que foram aplicadas. Os ids de configuração são
+/// gravados como VALOR (sem FK) para o histórico não quebrar quando a config muda/é apagada;
+/// a única FK é o documento fiscal a que o log pertence (Cascade).
+model DocumentoFiscalPonto {
+    id                      Int @id @default(autoincrement()) @map("id")
+    documentoFiscalHeaderId Int @map("documento_fiscal_header_id")
+
+    /// Snapshot: id do header de configuração contábil aplicado (valor, sem FK).
+    configuracaoContabilHeaderId       Int  @map("configuracao_contabil_header_id")
+    /// Snapshot: id da linha de origem em configuracao_contabil_detail_ponto (rastreio; valor, sem FK).
+    configuracaoContabilDetalhePontoId Int? @map("configuracao_contabil_detalhe_ponto_id")
+
+    /// @REFDOTZ.U_TIPO cru que resolveu a config (antes do fallback p/ default). O relatório de Trocas
+    /// junta por (documento_fiscal_header_id, u_tipo), então precisa do tipo original, não do resolvido.
+    uTipo          String?  @map("u_tipo") @db.NVarChar(20)
+    codigoPonto    String?  @map("codigo_ponto") @db.NVarChar(20) /// Código da config aplicada (já resolvido: o do U_TIPO ou o default). Null = regra p/ todos os pontos
+    descricaoPonto String?  @map("descricao_ponto") @db.NVarChar(250)
+    custoPonto     Decimal? @map("custo_ponto") @db.Decimal(19, 6) /// Mesma precisão da origem (evita truncar o custo do snapshot)
+
+    contaCredito String? @map("conta_credito") @db.NVarChar(20) /// Conta contábil SAP - crédito
+    contaDebito  String? @map("conta_debito") @db.NVarChar(20) /// Conta contábil SAP - débito
+
+    grupoPisCofins String @default("N") @map("grupo_pis_cofins") @db.NVarChar(1) /// 'S'/'N' (mesmo domínio da origem)
+
+    aliquotaPis        Decimal? @map("aliquota_pis") @db.Decimal(7, 4)
+    contaCreditoPis    String?  @map("conta_credito_pis") @db.NVarChar(20)
+    contaDebitoPis     String?  @map("conta_debito_pis") @db.NVarChar(20)
+
+    aliquotaCofins     Decimal? @map("aliquota_cofins") @db.Decimal(7, 4)
+    contaCreditoCofins String?  @map("conta_credito_cofins") @db.NVarChar(20)
+    contaDebitoCofins  String?  @map("conta_debito_cofins") @db.NVarChar(20)
+
+    criadoEm DateTime @default(now()) @map("criado_em")
+
+    documentoFiscalHeader DocumentoFiscalHeader @relation(fields: [documentoFiscalHeaderId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+    @@index([documentoFiscalHeaderId])
+    @@index([documentoFiscalHeaderId, uTipo]) /// JOIN do relatório de Trocas (por documento + tipo cru)
+    @@index([configuracaoContabilHeaderId])
+    @@index([codigoPonto])
+    @@index([criadoEm])
+    @@map("documento_fiscal_ponto")
+}
+
+
+/**
+ * # Documento Fiscal Errors
+ * 
+ * Armazena os erros de validação encontrados durante o processamento de documentos fiscais.
+ * 
+ * ## Tipos de Erro
+ * 
+ * O campo `tipo` identifica a categoria do erro:
+ * - `DIVERGENCIA`: Diferença entre dados do romaneio e do Analyzer (não impede integração)
+ * - `ERRO`: Erro crítico de validação (impede integração)
+ * 
+ * **Tipagem TypeScript**: Para garantir type-safety no código, utilize a tipagem:
+ * `src/@types/DocumentoFiscalError/TipoErroTypes.ts`
+ * 
+ * ## Códigos de Erro
+ * 
+ * O campo `code` armazena códigos de erro de validação que identificam o tipo de problema encontrado.
+ * Para consultar a lista completa de códigos e suas descrições, consulte:
+ * `src/modules/documento-fiscal/documento-details/services/processamento/utils/errorCodes.ts`
+ */
+model DocumentoFiscalErrors {
+    id                       Int    @id @default(autoincrement()) @map("id")
+    documentoFiscalDetalheId Int    @map("documento_fiscal_detalhe_id")
+    tipo String? @map("tipo") @default("DIVERGENCIA") @db.NVarChar(20)
+    code String? @map("code") @db.NVarChar(50)
+    mensagem String? @map("mensagem") @db.NVarChar(Max) // Detalhes do erro
+
+    criadoEm DateTime @default(now()) @map("criado_em")
+
+    documentoFiscalDetalhe DocumentoFiscalDetalhe @relation(fields: [documentoFiscalDetalheId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+
+    @@map("documento_fiscal_error")
+}
+
+/**
+ * # Configuração Contábil
+ * - TipoDocumentoERP: Valores permitidos: TP_ROM(Troca de pontos Romaneio) | TP_POS(Troca de pontos POS) | DR(Venda de pontos) | PD(Promo Dotz) | RD(Receitas Diferidas)
+ * - GrupoPisCofins: Valores permitidos: S(Sim) | N(Não)
+ * - TipoContabilERP: Campo de texto livre (máximo 20 caracteres, obrigatório)
+ * - TextoHeaderContábil: opcional, máximo 25 caracteres
+ */
+
+model ConfiguracaoContabil {
+    id                   Int     @id @default(autoincrement())
+    tipoProcesso         String  @default("TP_ROM") @map("tipo_processo") @db.NVarChar(10)
+    tipoDocumentoERP     String  @map("tipo_documento_erp") @db.NVarChar(2) /// Tipo de documento SAP (RE, PD, DR, RD)
+    ciaId                Int     @map("cia_id")
+    periodoDeDiferimento Int?    @map("periodo_de_diferimento")
+    tipoContabilERP      String  @map("tipo_contabil_erp") @db.VarChar(20)
+    textoHeaderContabil  String? @map("texto_header_contabil") @db.NVarChar(25) /// Texto exibido no header contábil (máx. 25 caracteres)
+    tipoDocumentoXTPG    String? @map("tipo_documento_xtpg") @db.NVarChar(10) /// Tipo de documento enviado para XTPG — usado na chave de busca do boleto (S4P#Cia#Ano#Doc#TipoXTPG#Parceiro). Apenas para tipoProcesso=DR
+    taxaExpiracao        Decimal? @map("taxa_expiracao") @db.Decimal(7, 4)
+
+    criadoPor     Int      @map("criado_por")
+    criadoEm      DateTime @default(now()) @map("criado_em")
+    atualizadoPor Int      @map("atualizado_por")
+    atualizadoEm  DateTime @default(now()) @map("atualizado_em")
+
+    cia                  Cia     @relation(fields: [ciaId], references: [id])
+    atualizadoPorUsuario Usuario @relation("ConfiguracaoContabilAtualizadoPor", fields: [atualizadoPor], references: [id], onDelete: NoAction, onUpdate: NoAction)
+    criadoPorUsuario     Usuario @relation("ConfiguracaoContabilCriadoPor", fields: [criadoPor], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+    configuracaoContabilDetalhes      ConfiguracaoContabilDetalhe[]
+    configuracaoContabilDetalhesPonto ConfiguracaoContabilDetalhePonto[]
+
+    @@unique([ciaId, tipoProcesso])
+    @@index([ciaId])
+    @@index([tipoProcesso])
+    @@index([criadoPor])
+    @@index([criadoEm])
+    @@index([atualizadoPor])
+    @@index([atualizadoEm])
+    @@map("configuracao_contabil_header")
+}
+
+model ConfiguracaoContabilDetalhe {
+    id                     Int     @id @default(autoincrement())
+    configuracaoContabilId Int     @map("configuracao_contabil_id")
+    codigoItem             String? @map("codigo_item") @db.NVarChar(20)
+    grupoPisCofins         String  @default("N") @map("grupo_pis_cofins") @db.NVarChar(1)
+    validarDivergencia     Boolean @default(true) @map("validar_divergencia") /// false = linhas manuais (desconto, reversão, bonificação) não geram divergência
+
+    aliquotaPis    Decimal? @map("aliquota_pis") @db.Decimal(7,4) // Alíquota PIS em porcentagem 
+    aliquotaCofins Decimal? @map("aliquota_cofins") @db.Decimal(7,4) // Alíquota COFINS em porcentagem 
+
+    contaCreditoPis String? @map("conta_credito_pis") @db.NVarChar(20) // Id da conta contábil que está cadastrado no SAP
+    contaDebitoPis  String? @map("conta_debito_pis") @db.NVarChar(20) // Id da conta contábil que está cadastrado no SAP
+
+    contaCreditoCofins String? @map("conta_credito_cofins") @db.NVarChar(20) // Id da conta contábil que está cadastrado no SAP
+    contaDebitoCofins  String? @map("conta_debito_cofins") @db.NVarChar(20) // Id da conta contábil que está cadastrado no SAP
+
+    contaCreditoValorProduto String? @map("conta_credito_valor_produto") @db.NVarChar(20) // Id da conta contábil que está cadastrado no SAP
+    contaDebitoValorProduto  String? @map("conta_debito_valor_produto") @db.NVarChar(20) // Id da conta contábil que está cadastrado no SAP
+
+    contaCreditoValorFrete String? @map("conta_credito_valor_frete") @db.NVarChar(20) // Id da conta contábil que está cadastrado no SAP
+    contaDebitoValorFrete  String? @map("conta_debito_valor_frete") @db.NVarChar(20) // Id da conta contábil que está cadastrado no SAP
+
+    contaCreditoValorCombo String? @map("conta_credito_valor_combo") @db.NVarChar(20) // Id da conta contábil que está cadastrado no SAP
+    contaDebitoValorCombo  String? @map("conta_debito_valor_combo") @db.NVarChar(20) // Id da conta contábil que está cadastrado no SAP
+
+    contaCreditoValorIs String? @map("conta_credito_valor_is") @db.NVarChar(20) // Id da conta contábil que está cadastrado no SAP
+    contaDebitoValorIs  String? @map("conta_debito_valor_is") @db.NVarChar(20) // Id da conta contábil que está cadastrado no SAP
+
+    contaCreditoValorCbs String? @map("conta_credito_valor_cbs") @db.NVarChar(20) // Id da conta contábil que está cadastrado no SAP
+    contaDebitoValorCbs  String? @map("conta_debito_valor_cbs") @db.NVarChar(20) // Id da conta contábil que está cadastrado no SAP
+
+    contaCreditoValorIbsUf String? @map("conta_credito_valor_ibs_uf") @db.NVarChar(20) // Id da conta contábil que está cadastrado no SAP
+    contaDebitoValorIbsUf  String? @map("conta_debito_valor_ibs_uf") @db.NVarChar(20) // Id da conta contábil que está cadastrado no SAP
+
+    contaCreditoValorIbsMunicipal String? @map("conta_credito_valor_ibs_municipal") @db.NVarChar(20) // Id da conta contábil que está cadastrado no SAP
+    contaDebitoValorIbsMunicipal  String? @map("conta_debito_valor_ibs_municipal") @db.NVarChar(20) // Id da conta contábil que está cadastrado no SAP
+
+    centroCusto String? @map("centro_custo") @db.NVarChar(20) // Centro de custo SAP
+    centroLucro String? @map("centro_lucro") @db.NVarChar(20) // Centro de lucro SAP
+
+    criadoPor     Int      @map("criado_por")
+    criadoEm      DateTime @default(now()) @map("criado_em")
+    atualizadoPor Int      @map("atualizado_por")
+    atualizadoEm  DateTime @default(now()) @map("atualizado_em")
+
+    atualizadoPorUsuario Usuario @relation("ConfiguracaoContabilDetalheAtualizadoPor", fields: [atualizadoPor], references: [id], onDelete: NoAction, onUpdate: NoAction)
+    criadoPorUsuario     Usuario @relation("ConfiguracaoContabilDetalheCriadoPor", fields: [criadoPor], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+    configuracaoContabil ConfiguracaoContabil @relation(fields: [configuracaoContabilId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+    documentoFiscalDetalhes DocumentoFiscalDetalhe[]
+
+    @@unique([configuracaoContabilId, grupoPisCofins, codigoItem])
+    @@index([configuracaoContabilId])
+    @@index([codigoItem])
+    @@index([grupoPisCofins])
+    @@index([criadoPor])
+    @@index([criadoEm])
+    @@index([atualizadoPor])
+    @@index([atualizadoEm])
+    @@map("configuracao_contabil_detail")
+}
+
+model ConfiguracaoContabilDetalhePonto {
+    id                     Int     @id @default(autoincrement())
+    ehPadrao               Boolean @default(false) @map("default") /// Quando true, aplica-se a tipos de ponto sem cadastro específico
+    configuracaoContabilId Int     @map("configuracao_contabil_id")
+    codigoPonto            String? @map("codigo_ponto") @db.NVarChar(20) /// Null = regra para todos os pontos
+    descricaoPonto         String? @map("descricao_ponto") @db.NVarChar(250)
+    custoPonto             Decimal? @map("custo_ponto") @db.Decimal(19, 6)
+
+    contaCredito String? @map("conta_credito") @db.NVarChar(20) /// Troca - Id da conta contábil cadastrada no SAP
+    contaDebito  String? @map("conta_debito") @db.NVarChar(20) /// Troca - Id da conta contábil cadastrada no SAP — lado débito
+    
+    centroCusto  String? @map("centro_custo") @db.NVarChar(20) /// Centro de custo SAP
+    centroLucro  String? @map("centro_lucro") @db.NVarChar(20) /// Centro de lucro SAP
+
+    contaCreditoReceitaExpiracao String? @map("conta_credito_receita_expiracao") @db.NVarChar(20) // Conta crédito Receita Expiração
+    contaCreditoReceitaVendas String? @map("conta_credito_receita_vendas") @db.NVarChar(20) // Conta crédito Receita Vendas (Margem pontos não expiram)
+    contaCreditoReceitaResgate String? @map("conta_credito_receita_resgate") @db.NVarChar(20) // Conta crédito Receita de resgate Dotz
+
+    grupoPisCofins String @default("N") @map("grupo_pis_cofins") @db.NVarChar(1)
+
+    aliquotaPis    Decimal? @map("aliquota_pis") @db.Decimal(7, 4)
+    aliquotaCofins Decimal? @map("aliquota_cofins") @db.Decimal(7, 4)
+
+    contaCreditoPis    String? @map("conta_credito_pis") @db.NVarChar(20)
+    contaDebitoPis     String? @map("conta_debito_pis") @db.NVarChar(20)
+    contaCreditoCofins String? @map("conta_credito_cofins") @db.NVarChar(20)
+    contaDebitoCofins  String? @map("conta_debito_cofins") @db.NVarChar(20)
+
+    criadoPor     Int      @map("criado_por")
+    criadoEm      DateTime @default(now()) @map("criado_em")
+    atualizadoPor Int      @map("atualizado_por")
+    atualizadoEm  DateTime @default(now()) @map("atualizado_em")
+
+    configuracaoContabil ConfiguracaoContabil @relation(fields: [configuracaoContabilId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+    atualizadoPorUsuario Usuario              @relation("ConfiguracaoContabilDetalhePontoAtualizadoPor", fields: [atualizadoPor], references: [id], onDelete: NoAction, onUpdate: NoAction)
+    criadoPorUsuario     Usuario              @relation("ConfiguracaoContabilDetalhePontoCriadoPor", fields: [criadoPor], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+    @@unique([configuracaoContabilId, grupoPisCofins, codigoPonto])
+    @@index([configuracaoContabilId])
+    @@index([codigoPonto])
+    @@index([grupoPisCofins])
+    @@index([criadoPor])
+    @@index([criadoEm])
+    @@index([atualizadoPor])
+    @@index([atualizadoEm])
+    @@map("configuracao_contabil_detail_ponto")
+}
+
+// Status Novo: PENDENTE, INTEGRADO_SAP, INTEGRADO_VEXPENSES, ERRO_INTEGRACAO_SAP, ERRO_INTEGRACAO_VEXPENSES
+
+// Status Antigo:
+// 1: Nota criada no SAP
+// 2: Erro na importacao
+// 3: Pagamento enviado ao VExpenses
+// 4: Erro ao enviar pagamento 
+
+model ControleExpense{
+    id Int @id @default(autoincrement()) @map("id")
+    reportId Int @map("report_id")
+    paying_company_id Int? @map("paying_company_id") /// Anulavel: relatorios descartados antes da integracao podem nao ter empresa pagadora resolvida
+
+    status String @map("status") @db.NVarChar(50) @default("PENDENTE") /// Status Novo: PENDENTE, INTEGRADO_SAP, INTEGRADO_VEXPENSES, ERRO_INTEGRACAO_SAP, ERRO_INTEGRACAO_VEXPENSES, DESCARTADO
+    codigoDocumentoERP String? @map("codigo_documento_erp") @db.NVarChar(50) /// Vem do SAP
+    codigoCia String? @map("codigo_cia") @db.NVarChar(4) /// CompanyCode SAP do documento (chave da baixa: company_code+fiscal_year+accounting_document)
+    fiscalYear String? @map("fiscal_year") @db.NVarChar(4) /// Ano fiscal do lancamento; compoe a chave da baixa
+    codigoSapColaborador String? @map("codigo_sap_colaborador") @db.NVarChar(50) /// Vem do vExpenses
+    codigoProtocoloVexpenses String? @map("codigo_protocolo_vexpenses") @db.NVarChar(50) /// Vem do vExpenses
+    error_message String? @map("error_message") @db.NVarChar(1000)
+    request String? @map("request") @db.NVarChar(Max) /// Payload JSON enviado ao SAP
+    response String? @map("response") @db.NVarChar(Max) /// Resposta do SAP (sucesso ou erro)
+    nomeColaborador String? @map("nome_colaborador") @db.NVarChar(200) /// Nome do colaborador (team-member VExpenses)
+    valorDocumento Decimal? @map("valor_documento") @db.Decimal(19,2) /// Valor total do lançamento SAP
+
+
+    dataImportacao DateTime? @map("data_importacao")
+    dataIntegracaoPagamento DateTime? @map("data_integracao_pagamento")
+    dataAprovacao DateTime? @map("data_aprovacao")
+
+    criadoEm DateTime @default(now()) @map("criado_em")
+    atualizadoEm DateTime @default(now()) @map("atualizado_em")
+
+    @@map("controle_expense")
+}
+
+model AccountingDocumentItem {
+  CompanyCode                         String   @db.NVarChar(4) @map("company_code")  /// Vem do SAP
+  FiscalYear                          String   @db.NVarChar(4) @map("fiscal_year") /// Vem do SAP
+  AccountingDocument                  String   @db.NVarChar(10) @map("accounting_document") /// Vem do SAP
+  AccountingDocumentItem              String   @db.NVarChar(3) @map("accounting_document_item") /// Vem do SAP
+  ChartOfAccounts                     String?  @db.NVarChar(10) @map("chart_of_accounts") /// Plano de contas (SAP)
+
+  AccountingDocumentItemType          String?  @db.NVarChar(2) @map("accounting_document_item_type") /// Vem do SAP
+  ClearingDate                        DateTime? @map("clearing_date") /// Vem do SAP
+  ClearingCreationDate                DateTime? @map("clearing_creation_date") /// Vem do SAP
+  ClearingAccountingDocument          String?  @db.NVarChar(10) @map("clearing_accounting_document") /// Vem do SAP
+  IsCleared                           String?  @db.NVarChar(1) @map("is_cleared") /// Vem do SAP
+  PostingKey                          String?  @db.NVarChar(2) @map("posting_key") /// Vem do SAP
+  FinancialAccountType                String?  @db.NVarChar(1) @map("financial_account_type") /// Vem do SAP
+  DebitCreditCode                     String?  @db.NVarChar(1) @map("debit_credit_code") /// Vem do SAP
+  BusinessArea                        String?  @db.NVarChar(4) @map("business_area") /// Vem do SAP
+  PartnerBusinessArea                 String?  @db.NVarChar(4) @map("partner_business_area") /// Vem do SAP
+  TaxCode                             String?  @db.NVarChar(2) @map("tax_code") /// Vem do SAP
+  WithholdingTaxCode                  String?  @db.NVarChar(2) @map("withholding_tax_code") /// Vem do SAP
+  TaxType                             String?  @db.NVarChar(2) @map("tax_type") /// Vem do SAP
+  TransactionTypeDetermination        String?  @db.NVarChar(3) @map("transaction_type_determination") /// Vem do SAP
+  ValueDate                           DateTime? @map("value_date") /// Vem do SAP
+  AssignmentReference                 String?  @db.NVarChar(18) @map("assignment_reference") /// Vem do SAP
+  DocumentItemText                    String?  @db.NVarChar(50) @map("document_item_text") /// Vem do SAP
+  ControllingArea                     String?  @db.NVarChar(4) @map("controlling_area") /// Vem do SAP
+  CostCenter                          String?  @db.NVarChar(10) @map("cost_center") /// Vem do SAP
+  Project                             String?  @db.NVarChar(12) @map("project") /// Vem do SAP
+  OrderID                             String?  @db.NVarChar(12) @map("order_id") /// Vem do SAP
+  BillingDocument                     String?  @db.NVarChar(10) @map("billing_document") /// Vem do SAP
+  SalesDocument                       String?  @db.NVarChar(10) @map("sales_document") /// Vem do SAP
+  SalesDocumentItem                   String?  @db.NVarChar(6) @map("sales_document_item") /// Vem do SAP
+  FixedAsset                          String?  @db.NVarChar(4) @map("fixed_asset") /// Vem do SAP
+  AssetTransactionType                String?  @db.NVarChar(3) @map("asset_transaction_type") /// Vem do SAP
+  OperationalGLAccount                String?  @db.NVarChar(10) @map("operational_gl_account") /// Vem do SAP
+  GLAccount                           String?  @db.NVarChar(10) @map("gl_account") /// Vem do SAP
+  Customer                            String?  @db.NVarChar(10) @map("customer") /// Vem do SAP
+  Supplier                            String?  @db.NVarChar(10) @map("supplier") /// Vem do SAP
+  ProfitLossAccountType               String?  @db.NVarChar(1) @map("profit_loss_account_type") /// Vem do SAP
+  DueCalculationBaseDate              DateTime? @map("due_calculation_base_date") /// Vem do SAP
+  PaymentTerms                        String?  @db.NVarChar(4) @map("payment_terms") /// Vem do SAP
+  CashDiscount1Days                   String?  @db.NVarChar(3) @map("cash_discount_1_days") /// Vem do SAP
+  CashDiscount2Days                   String?  @db.NVarChar(3) @map("cash_discount_2_days") /// Vem do SAP
+  NetPaymentDays                      String?  @db.NVarChar(3) @map("net_payment_days") /// Vem do SAP
+  CashDiscount1Percent                Decimal? @db.Decimal(5, 3) @map("cash_discount_1_percent") /// Vem do SAP
+  CashDiscount2Percent                Decimal? @db.Decimal(5, 3) @map("cash_discount_2_percent") /// Vem do SAP
+  PaymentReason                       String?  @db.NVarChar(4) @map("payment_reason") /// Vem do SAP
+  PaymentMethod                       String?  @db.NVarChar(1) @map("payment_method") /// Vem do SAP
+  PaymentBlockingReason               String?  @db.NVarChar(1) @map("payment_blocking_reason") /// Vem do SAP
+  HouseBank                           String?  @db.NVarChar(5) @map("house_bank") /// Vem do SAP
+  BPBankAccountInternalID             String?  @db.NVarChar(4) @map("bp_bank_account_internal_id") /// Vem do SAP
+  InvoiceReference                    String?  @db.NVarChar(10) @map("invoice_reference") /// Vem do SAP
+  InvoiceReferenceFiscalYear          String?  @db.NVarChar(4) @map("invoice_reference_fiscal_year") /// Vem do SAP
+  InvoiceItemReference                String?  @db.NVarChar(3) @map("invoice_item_reference") /// Vem do SAP
+  Plant                               String?  @db.NVarChar(4) @map("plant") /// Vem do SAP
+  PurchasingDocument                  String?  @db.NVarChar(10) @map("purchasing_document") /// Vem do SAP
+  ProfitCenter                        String?  @db.NVarChar(10) @map("profit_center") /// Vem do SAP
+  ClearingIsReversed                  String?  @db.NVarChar(1) @map("clearing_is_reversed") /// Vem do SAP
+  AlternativeGLAccount                String?  @db.NVarChar(10) @map("alternative_gl_account") /// Vem do SAP
+  PaymentReference                    String?  @db.NVarChar(30) @map("payment_reference") /// Vem do SAP
+  ClearingItem                        String?  @db.NVarChar(3) @map("clearing_item") /// Vem do SAP
+  BusinessPlace                       String?  @db.NVarChar(4) @map("business_place") /// Vem do SAP
+  FunctionalArea                      String?  @db.NVarChar(16) @map("functional_area") /// Vem do SAP
+  ClearingDocFiscalYear               String?  @db.NVarChar(4) @map("clearing_doc_fiscal_year") /// Vem do SAP
+  HouseBankAccount                    String?  @db.NVarChar(5) @map("house_bank_account") /// Vem do SAP
+  ReferenceDocumentType               String?  @db.NVarChar(10) @map("reference_document_type") /// Vem do SAP
+  OriginalReferenceDocument           String?  @db.NVarChar(20) @map("original_reference_document") /// Vem do SAP
+  FiscalPeriod                        String?  @db.NVarChar(3) @map("fiscal_period") /// Vem do SAP
+  PostingDate                         DateTime? @map("posting_date") /// Vem do SAP
+  DocumentDate                        DateTime? @map("document_date") /// Vem do SAP
+  AccountingDocumentType              String?  @db.NVarChar(2) @map("accounting_document_type") /// Vem do SAP
+  NetDueDate                          DateTime? @map("net_due_date") /// Vem do SAP
+  CashDiscount1DueDate                DateTime? @map("cash_discount_1_due_date") /// Vem do SAP
+  CashDiscount2DueDate                DateTime? @map("cash_discount_2_due_date") /// Vem do SAP
+  CompanyCodeCurrency                 String?  @db.NVarChar(5) @map("company_code_currency") /// Vem do SAP
+  AmountInCompanyCodeCurrency         Decimal? @db.Decimal(23, 2) @map("amount_in_company_code_currency") /// Vem do SAP
+  TaxAmountInCoCodeCrcy               Decimal? @db.Decimal(23, 2) @map("tax_amount_in_company_code_currency") /// Vem do SAP
+  TaxBaseAmountInCoCodeCrcy           Decimal? @db.Decimal(23, 2) @map("tax_base_amount_in_company_code_currency") /// Vem do SAP
+  ValuationDiffAmtInCoCodeCrcy        Decimal? @db.Decimal(23, 2) @map("valuation_diff_amount_in_company_code_currency") /// Vem do SAP
+  CashDiscountAmtInCoCodeCrcy         Decimal? @db.Decimal(23, 2) @map("cash_discount_amount_in_company_code_currency") /// Vem do SAP
+  InvoiceAmtInCoCodeCrcy              Decimal? @db.Decimal(23, 2) @map("invoice_amount_in_company_code_currency") /// Vem do SAP
+
+  TransactionCurrency                String?  @db.NVarChar(5) @map("transaction_currency") /// Vem do SAP
+  AmountInTransactionCurrency         Decimal? @db.Decimal(23, 2) @map("amount_in_transaction_currency") /// Vem do SAP
+  OriginalTaxBaseAmount               Decimal? @db.Decimal(23, 2) @map("original_tax_base_amount") /// Vem do SAP
+  TaxAmount                           Decimal? @db.Decimal(23, 2) @map("tax_amount") /// Vem do SAP
+  TaxBaseAmountInTransCrcy            Decimal? @db.Decimal(23, 2) @map("tax_base_amount_in_transaction_currency") /// Vem do SAP
+  WithholdingTaxBaseAmount            Decimal? @db.Decimal(23, 2) @map("withholding_tax_base_amount") /// Vem do SAP
+  PlannedAmtInTransactionCrcy         Decimal? @db.Decimal(23, 2) @map("planned_amount_in_transaction_currency") /// Vem do SAP
+  CashDiscountBaseAmount              Decimal? @db.Decimal(23, 2) @map("cash_discount_base_amount") /// Vem do SAP
+  CashDiscountAmount                  Decimal? @db.Decimal(23, 2) @map("cash_discount_amount") /// Vem do SAP
+  NetPaymentAmount                    Decimal? @db.Decimal(23, 2) @map("net_payment_amount") /// Vem do SAP
+  WithholdingTaxAmount                Decimal? @db.Decimal(23, 2) @map("withholding_tax_amount") /// Vem do SAP
+  WithholdingTaxExemptionAmt          Decimal? @db.Decimal(23, 2) @map("withholding_tax_exemption_amount") /// Vem do SAP
+  InvoiceAmountInFrgnCurrency         Decimal? @db.Decimal(23, 2) @map("invoice_amount_in_foreign_currency") /// Vem do SAP
+
+  BalanceTransactionCurrency          String?  @db.NVarChar(5) @map("balance_transaction_currency") /// Vem do SAP
+  AmountInBalanceTransacCrcy          Decimal? @db.Decimal(23, 2) @map("amount_in_balance_transaction_currency") /// Vem do SAP
+  AdditionalCurrency1                String?  @db.NVarChar(5) @map("additional_currency_1") /// Vem do SAP
+  ValuationDiffAmtInAddlCrcy1         Decimal? @db.Decimal(23, 2) @map("valuation_diff_amount_in_additional_currency_1") /// Vem do SAP
+  AmountInAdditionalCurrency1         Decimal? @db.Decimal(23, 2) @map("amount_in_additional_currency_1") /// Vem do SAP
+
+  Quantity                            Decimal? @db.Decimal(13, 3) @map("quantity") /// Vem do SAP
+
+  AccountingDocumentCreationDate      DateTime? @map("accounting_document_creation_date") /// Vem do SAP
+  CreationTime                        String?  @db.NVarChar(11) @map("creation_time") /// Vem do SAP
+  LastChangeDate                      DateTime? @map("last_change_date") /// Vem do SAP
+  AccountingDocCreatedByUser          String?  @db.NVarChar(12) @map("accounting_doc_created_by_user") /// Vem do SAP
+  DocumentReferenceID                 String?  @db.NVarChar(20) @map("document_reference_id") /// Vem do SAP
+  ReverseDocument                     String?  @db.NVarChar(10) @map("reverse_document") /// Vem do SAP
+  ReverseDocumentFiscalYear           String?  @db.NVarChar(4) @map("reverse_document_fiscal_year") /// Vem do SAP
+  AccountingDocumentHeaderText        String?  @db.NVarChar(25) @map("accounting_document_header_text") /// Vem do SAP
+  ReversalReason                      String?  @db.NVarChar(2) @map("reversal_reason") /// Vem do SAP
+  TaxReportingDate                    DateTime? @map("tax_reporting_date") /// Vem do SAP
+  IsReversal                          String?  @db.NVarChar(1) @map("is_reversal") /// Vem do SAP
+  IsReversed                          String?  @db.NVarChar(1) @map("is_reversed") /// Vem do SAP
+
+  Bloco String? @db.NVarChar(1) @map("bloco")
+  IdXRT String? @db.NVarChar(50) @map("id_xrt")
+  SavClearAccDoc String? @db.NVarChar(10) @map("sav_clear_acc_doc")
+  SavClearDocFiscalYear String? @db.NVarChar(4) @map("sav_clear_doc_fiscal_year")
+  SavClearItem String? @db.NVarChar(3) @map("sav_clear_item")
+  SavRevDoc String? @db.NVarChar(10) @map("sav_rev_doc")
+  SavRevDocFiscalYear String? @db.NVarChar(4) @map("sav_rev_doc_fiscal_year")
+  StickyClearAccDoc String? @db.NVarChar(10) @map("sticky_clear_acc_doc") /// Primeiro vinculo de compensacao visto pelo sync; nunca sobrescrito por vazio
+  StickyClearDocFiscalYear String? @db.NVarChar(4) @map("sticky_clear_doc_fiscal_year")
+  StickyClearItem String? @db.NVarChar(3) @map("sticky_clear_item")
+  XtpgContaOrigem String? @db.NVarChar(10) @map("xtpg_conta_origem") /// Conta de resultado do documento de origem, resolvida ao final do sync
+  XtpgContaOrigemNivel Int? @db.TinyInt @map("xtpg_conta_origem_nivel")
+  XtpgContaOrigemNome String? @db.NVarChar(100) @map("xtpg_conta_origem_nome")
+  EnvioID Int? @map("envio_ID")
+  NumberOfDays Int? @map("number_of_days")
+  StatusParaEnvio String? @db.NVarChar(20) @map("status_para_envio")
+  StatusRegistroAlterado String? @db.NVarChar(1) @map("status_registro_alterado")
+  ItemFluxodeCaixa String? @db.NVarChar(20) @map("item_fluxo_de_caixa")
+  XtpgClassificacaoErro String? @db.NVarChar(500) @map("xtpg_classificacao_erro")
+  XtpgClassificacaoErroEm DateTime? @map("xtpg_classificacao_erro_em") /// Quando o erro foi registrado; comparado com ContasContabeis.DataAlteracao p/ reabrir a linha
+  UltDocPgto String? @db.NVarChar(10) @map("Ult_Doc_Pgto")
+  UltPkEnviada String? @db.NVarChar(50) @map("Ult_PK_Enviada")
+
+  BusinessTransactionType String? @db.NVarChar(10) @map("business_transaction_type") /// Vem do SAP
+  CompanyCodeName String? @db.NVarChar(30) @map("company_code_name") /// Vem do SAP
+  BusinessAreaName  String? @db.NVarChar(30) @map("business_area_name") /// Vem do SAP
+  ControllingAreaName  String? @db.NVarChar(30) @map("controlling_area_name") /// Vem do SAP
+  CostCenterName  String? @db.NVarChar(30) @map("cost_center_name") /// Vem do SAP
+  FunctionalAreaName  String? @db.NVarChar(30) @map("functional_area_name") /// Vem do SAP
+  AccountingDocumentCategoryName String? @db.NVarChar(30) @map("accounting_document_category_name") /// Vem do SAP
+  AccountingDocumentTypeName String? @db.NVarChar(30) @map("accounting_document_type_name") /// Vem do SAP
+  SegmentName String? @db.NVarChar(30) @map("segment_name") /// Vem do SAP
+  ProfitCenterName String? @db.NVarChar(30) @map("profit_center_name") /// Vem do SAP
+  GLAccountLongName String? @db.NVarChar(50) @map("gl_account_long_name") /// Vem do SAP
+
+  Reference1IDByBusinessPartner String? @db.NVarChar(20) @map("reference_1_id_by_business_partner") /// Vem do SAP
+  Reference2IDByBusinessPartner String? @db.NVarChar(30) @map("reference_2_id_by_business_partner") /// Vem do SAP
+  Reference3IDByBusinessPartner String? @db.NVarChar(50) @map("reference_3_id_by_business_partner") /// Vem do SAP
+
+  @@id([CompanyCode, FiscalYear, AccountingDocument, AccountingDocumentItem])
+  // DTZ-301 (performance, e-mail Everaldo 26/08): índices para as varreduras das views
+  // XRT_SendPrevPagto/XRT_SendFlux (só a PK existia). Gate de envio + self-joins de
+  // compensação/reversão. Tabela sync-heavy → conjunto enxuto (3 índices).
+  @@index([StatusParaEnvio, FinancialAccountType], map: "IX_registros_contabeis_status_fat")
+  @@index([CompanyCode, ClearingAccountingDocument, ClearingItem], map: "IX_registros_contabeis_clearing")
+  @@index([CompanyCode, ReverseDocument], map: "IX_registros_contabeis_reverse")
+  @@map("registros_contabeis")
+}
+
+
+model ContasContabeis {
+    ChartOfAccounts String @db.NVarChar(10) @map("chart_of_accounts") /// Plano de contas
+    CompanyCode String @db.NVarChar(10) @map("company_code") /// Codigo da CIA
+    GLAccount String @db.NVarChar(30) @map("gl_account") /// Conta do Razão
+    GLAccountName String @db.NVarChar(100) @map("gl_account_name") /// Descrição da Conta
+    GLAccountECD String? @db.NVarChar(30) @map("gl_account_ecd") /// Conta Sped Contabil
+    GLAccountCosif String? @db.NVarChar(30) @map("gl_account_cosif") /// Conta do Plano Cosif (usar Cadocs)
+    GLContaPaiCosif String? @db.NVarChar(30) @map("gl_conta_pai_cosif") /// Conta Pai do Plano Cosif
+    ItemFluxoDeCaixa String? @db.NVarChar(20) @map("item_fluxo_de_caixa") /// Item do Fluxo de Caixa
+    GlAccountB1Xtpg String? @map("gl_account_b1_xtpg") @db.NVarChar(30) /// Conta contábil B1 (XTPG)
+    XtpgAtivado Boolean? @map("xtpg_ativado") /// Conta ativa para classificação XTPG
+    CentroCusto String? @db.NVarChar(20) @map("centro_custo") /// (DTZ-247) Centro de custo enviado ao S/4 no LCM
+    CentroLucro String? @db.NVarChar(20) @map("centro_lucro") /// (DTZ-247) Centro de lucro enviado ao S/4 no LCM
+
+    DataInicio DateTime? @map("data_inicio") /// Data de início
+    DataAlteracao DateTime? @map("data_alteracao") /// Data de alteração
+    DataFim DateTime? @map("data_fim") /// Data de fim
+
+    
+
+    @@id([ChartOfAccounts, CompanyCode, GLAccount])
+    @@map("contas_contabeis")
+
+}
+
+// DTZ-248: valores válidos da coluna Item Fluxo de Caixa (registros_contabeis).
+// Sem tela de cadastro — a manutenção é feita direto no banco.
+model ItemFluxoCaixa {
+    codigo String @id @db.NVarChar(20) @map("codigo") /// Código/ID do item de fluxo (CFW)
+    nome   String @db.NVarChar(100) @map("nome") /// Descrição exibida (CFWName)
+
+    @@map("item_fluxo_caixa")
+}
+
+model FluxoCaixaCiaParceiro {
+    cardCode       String   @map("card_code") @db.NVarChar(50) /// Código do Fornecedor
+    companyCode    String   @map("company_code") @db.NVarChar(10) /// Código da CIA
+    itemFluxoCaixa String   @map("item_fluxo_caixa") @db.NVarChar(20) /// Item do Fluxo de Caixa
+
+    criadoEm      DateTime @default(now()) @map("criado_em")
+    atualizadoEm  DateTime @default(now()) @updatedAt @map("atualizado_em")
+    criadoPor     Int      @map("criado_por")
+    atualizadoPor Int      @map("atualizado_por")
+
+    criadoPorUsuario     Usuario @relation("FluxoCaixaCiaParceiroCriadoPor", fields: [criadoPor], references: [id], onDelete: NoAction, onUpdate: NoAction)
+    atualizadoPorUsuario Usuario @relation("FluxoCaixaCiaParceiroAtualizadoPor", fields: [atualizadoPor], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+    @@id([cardCode, companyCode])
+    @@index([criadoPor])
+    @@index([atualizadoPor])
+    @@map("fluxo_caixa_cia_parceiro")
+}
+
+model FluxoCaixaCiaTipoLancamento {
+    companyCode           String @map("company_code") @db.NVarChar(10) /// Equivale a registros_contabeis.CompanyCode
+    postingKey            String @map("posting_key") @db.NVarChar(2) /// Equivale a registros_contabeis.PostingKey
+    documentType          String @map("document_type") @db.NVarChar(2) /// Equivale a registros_contabeis.AccountingDocumentType
+    referenceDocumentType String @map("reference_document_type") @db.NVarChar(10) /// Equivale a registros_contabeis.ReferenceDocumentType
+    isReversed            String @map("is_reversed") @db.NVarChar(1) /// Equivale a registros_contabeis.IsReversed
+    reversalReason        String @map("reversal_reason") @db.NVarChar(2) /// Equivale a registros_contabeis.ReversalReason
+    debitCreditCode       String @map("debit_credit_code") @db.NVarChar(1) /// Equivale a registros_contabeis.DebitCreditCode
+    itemFluxoCaixa        String @map("item_fluxo_caixa") @db.NVarChar(20) /// Item deduzido para preencher registros_contabeis.ItemFluxodeCaixa
+
+    criadoEm      DateTime @default(now()) @map("criado_em")
+    atualizadoEm  DateTime @default(now()) @updatedAt @map("atualizado_em")
+    criadoPor     Int      @map("criado_por")
+    atualizadoPor Int      @map("atualizado_por")
+
+    criadoPorUsuario     Usuario @relation("FluxoCaixaCiaTipoLancamentoCriadoPor", fields: [criadoPor], references: [id], onDelete: NoAction, onUpdate: NoAction)
+    atualizadoPorUsuario Usuario @relation("FluxoCaixaCiaTipoLancamentoAtualizadoPor", fields: [atualizadoPor], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+    @@id([companyCode, postingKey, documentType, referenceDocumentType, isReversed, reversalReason, debitCreditCode])
+    @@index([criadoPor])
+    @@index([atualizadoPor])
+    @@map("fluxo_caixa_cia_tipo_lancamento")
+}
+
+model Relatorio {
+    id              Int      @id @default(autoincrement())
+    nome            String   @db.VarChar(200)
+    descricao       String?  @db.VarChar(500)
+    grupo           String?  @db.VarChar(100)
+    query           String   @db.VarChar(Max)
+    criadoPorId     Int      @map("criado_por")
+    criadoEm        DateTime @default(now()) @map("criado_em")
+    atualizadoPorId Int?     @map("atualizado_por")
+    atualizadoEm    DateTime @updatedAt @map("atualizado_em")
+
+    criadoPor     Usuario              @relation("RelatorioCriadoPor", fields: [criadoPorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+    atualizadoPor Usuario?             @relation("RelatorioAtualizadoPor", fields: [atualizadoPorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+    execucoes     RelatorioExecucaoLog[]
+    variaveis     RelatorioVariavel[]
+
+    @@index([criadoPorId])
+    @@index([criadoEm])
+    @@index([grupo])
+    @@map("relatorio")
+}
+
+model RelatorioVariavel {
+    id          Int                   @id @default(autoincrement())
+    relatorioId Int                   @map("relatorio_id")
+    chave       String                @db.VarChar(50)
+    label       String                @db.VarChar(100)
+    tipo              String  @db.VarChar(10)
+    obrigatorio       Boolean @default(true)
+    fusoHorarioBrasil Boolean @default(false) @map("fuso_horario_brasil")
+    ordem             Int     @default(0)
+
+    relatorio Relatorio @relation(fields: [relatorioId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+    @@unique([relatorioId, chave])
+    @@index([relatorioId])
+    @@map("relatorio_variavel")
+}
+
+model RelatorioExecucaoLog {
+    id             Int      @id @default(autoincrement())
+    relatorioId    Int      @map("relatorio_id")
+    executadoPorId Int      @map("executado_por")
+    executadoEm    DateTime @default(now()) @map("executado_em")
+    duracaoMs      Int      @map("duracao_ms")
+    totalLinhas    Int?     @map("total_linhas")
+    status         String   @db.VarChar(10) @map("status")
+    mensagemErro   String?  @db.VarChar(Max) @map("mensagem_erro")
+
+    relatorio    Relatorio @relation(fields: [relatorioId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+    executadoPor Usuario   @relation("ExecucaoPor", fields: [executadoPorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+    @@index([relatorioId])
+    @@index([executadoPorId])
+    @@index([executadoEm])
+    @@map("relatorio_execucao_log")
+}
+
+model ContasBancarias {
+    CodigoCia        String  @db.NVarChar(10) @map("codigo_cia") /// Código da Companhia (Cia)
+    HouseBank        String  @db.NVarChar(10) @map("house_bank") /// Código SAP do Banco
+    HouseBankAccount String  @db.NVarChar(20) @map("house_bank_account") /// Código SAP para Conta
+    NumeroBanco      String  @db.NVarChar(10) @map("numero_banco") /// Número do Banco
+    NumeroAgencia    String  @db.NVarChar(10) @map("numero_agencia") /// Código Agencia
+    NomeBanco        String  @db.NVarChar(30) @map("nome_banco") /// Nome do Banco
+    DigitoAgenca     String? @db.NVarChar(3)  @map("digito_agencia") /// Dígito da Agência
+    NumeroConta      String  @db.NVarChar(20) @map("numero_conta") /// Número da Conta
+    DigitoConta      String? @db.NVarChar(3)  @map("digito_conta") /// Dígito da Conta
+    GLAccount        String? @db.NVarChar(30) @map("gl_account") /// Número da Conta Contábil
+
+    NumeroBancoLegado    String? @db.NVarChar(10) @map("numero_banco_legado") /// Número do Banco (Legado)
+    NumeroAgenciaLegado  String? @db.NVarChar(10) @map("numero_agencia_legado") /// Código Agência (Legado)
+    DigitoAgenciaLegado  String? @db.NVarChar(3)  @map("digito_agencia_legado") /// Dígito da Agência (Legado)
+    NumeroContaLegado    String? @db.NVarChar(20) @map("numero_conta_legado") /// Número da Conta (Legado)
+    DigitoContaLegado    String? @db.NVarChar(3)  @map("digito_conta_legado") /// Dígito da Conta (Legado)
+
+    criadoEm     DateTime @default(now()) @map("criado_em")
+    atualizadoEm DateTime @default(now()) @map("atualizado_em")
+
+    @@id([CodigoCia, HouseBank, HouseBankAccount])
+    @@map("contas_bancarias")
+}
+
+ /**
+  * # Vendas Header
+  * - Status: Valores permitidos: CADASTRO, PENDENTE, AGUARDANDO, PROCESSANDO, ERRO_PROC, INTEG_SAP, ERRO_INTEG_SAP, AGUARDANDO_BOLETO, ENVIANDO_EMAIL, ERRO_EMAIL, CONCLUIDO.
+  */
+model VendasHeader {
+    id Int @id @default(autoincrement()) @map("id")
+    ciaIdSAP String @map("cia_id_sap") @db.VarChar(100) /// Código da Cia SAP — NÃO é FK para tabela cia
+    status String @default("PENDENTE") @map("status") @db.NVarChar(20)  /// CADASTRO, PENDENTE, AGUARDANDO, PROCESSANDO, ERRO_PROC, INTEG_SAP, ERRO_INTEG_SAP, AGUARDANDO_BOLETO, ENVIANDO_EMAIL, ERRO_EMAIL, CONCLUIDO.
+    tipoCadastro String @map("TIPO_CADASTRO") @db.NVarChar(20)
+    tipoContabilERP String? @map("tipo_contabil_erp") @db.NVarChar(20)
+    tipoProcesso String? @map("tipo_processo") @db.NVarChar(10)
+    periodoDeDiferimento Int? @map("periodo_de_diferimento")
+    taxaExpiracao Decimal? @map("taxa_expiracao") @db.Decimal(7, 4)
+
+    codigoClienteAnalyzer String? @map("codigo_cliente_analyzer") @db.NVarChar(50) /// Código do cliente no analyzer
+    codigoClienteSAP String? @map("codigo_cliente_sap") @db.NVarChar(50) /// Código do cliente no SAP
+
+    numeroDocumentoAnalyzer String? @map("numero_documento_analyzer") @db.NVarChar(50) /// Número do documento no analyzer
+    numeroFaturaParceiro String? @map("numero_fatura_parceiro") @db.NVarChar(30) /// Número da fatura do parceiro no Analyzer
+    infoReferenciaAnalyzer String? @map("info_referencia_analyzer") @db.NVarChar(Max) /// Informações de referência no analyzer
+    cnpjCliente String? @map("cnpj_cliente") @db.NVarChar(20) /// CNPJ do cliente no Analyzer
+
+    valorTotalVendas Decimal? @map("valor_total_vendas") @db.Decimal(19,2) /// Valor total das vendas
+    valorReceitaExpiracao Decimal? @map("valor_receita_expiracao") @db.Decimal(19,2)
+    valorReceitaVenda Decimal? @map("valor_receita_venda") @db.Decimal(19,2)
+    valorReceitaResgate Decimal? @map("valor_receita_resgate") @db.Decimal(19,2)
+
+    pathArquivoFaturaDetalhadaAnalyzer String? @map("path_arquivo_fatura_detalhada_analyzer") @db.NVarChar(1000) /// Caminho do arquivo fatura detalhada no analyzer
+    pathArquivoRelatorioAnalitico String? @map("path_arquivo_relatorio_analitico") @db.NVarChar(1000) /// Caminho do arquivo relatório analítico
+
+    dataEmissao DateTime? @map("data_emissao") @db.Date /// Data de emissão da venda
+    dataLancamentoContabil DateTime? @map("data_lancamento_contabil") @db.Date /// Data de lançamento contábil da venda
+    dataVencimento DateTime? @map("data_vencimento") @db.Date /// Data de vencimento da venda
+    
+    dataFechamentoDe DateTime? @map("DATA_FECHAMENTO_DE") @db.Date /// Início do período de fechamento no Analyzer
+    dataFechamentoAte DateTime? @map("DATA_FECHAMENTO_ATE") @db.Date /// Fim do período de fechamento no Analyzer
+
+    documentoJson String? @map("documento_json") @db.NVarChar(Max) /// JSON de integração SAP
+    ano Int? @map("ano")
+    codigoDocumentoERP String? @map("codigo_documento_erp") @db.NVarChar(50) /// Código do documento retornado pelo SAP após integração
+    dataIntegracao DateTime? @map("data_integracao") /// Data de integração com SAP
+    retornoIntegracaoSap String? @map("retorno_integracao_sap") @db.NVarChar(Max) /// JSON do retorno da integração SAP
+    relatorioPdf String? @map("relatorio_pdf") @db.NVarChar(500) /// Caminho do arquivo PDF do relatório
+    relatorioXlsx String? @map("relatorio_xlsx") @db.NVarChar(500) /// Caminho do arquivo XLSX do relatório
+
+    pathBoleto         String? @map("path_boleto") @db.NVarChar(1000) /// Caminho do arquivo do boleto
+    codigoBoleto       String? @map("codigo_boleto") @db.NVarChar(100) /// Código identificador do boleto (S4P#Cia#Ano#Doc#Tipo#Parceiro)
+    erroConsultaBoleto String? @map("erro_consulta_boleto") @db.NVarChar(Max) /// JSON completo do último erro ao consultar o boleto no BankPlus
+    retornoConsultaBoletoInvent String?   @map("retorno_consulta_boleto_invent") @db.NVarChar(Max) /// Retorno da última chamada ao BankPlus Invent (sucesso ou erro), exibido na tela
+    dataUltimaConsultaBoleto    DateTime? @map("data_ultima_consulta_boleto") /// Data/hora da última tentativa de consulta do boleto no Invent (sucesso ou erro)
+
+    dataEnvioEmail    DateTime? @map("data_envio_email") /// Data/hora de confirmação real do envio do email de vendas (aceito pelo SMTP no worker)
+    destinatarioEmail String?   @map("destinatario_email") @db.NVarChar(255) /// Email do destinatário do envio de vendas
+    retornoEnvioEmail String?   @map("retorno_envio_email") @db.NVarChar(Max) /// JSON com o status de envio (ENVIADO/ERRO) por destinatário, exibido na tela
+
+    criadoEm      DateTime @default(now()) @map("criado_em")
+    atualizadoEm  DateTime @default(now()) @map("atualizado_em")
+
+    vendasDetalhe VendasDetalhe[]
+    vendaRecDiferidas VendaRecDiferida[]
+
+    @@index([ciaIdSAP, ano], map: "vendas_header_cia_id_sap_ano_idx")
+    @@index([status], map: "idx_vendas_header_status")
+    @@index([ciaIdSAP, status], map: "idx_vendas_header_cia_status")
+    @@index([dataEmissao], map: "idx_vendas_header_data_emissao")
+    @@index([codigoClienteSAP], map: "idx_vendas_header_cliente_sap")
+    @@index([numeroDocumentoAnalyzer], map: "idx_vendas_header_doc_analyzer")
+    @@index([cnpjCliente], map: "idx_vendas_header_cnpj")
+    @@map("vendas_header")
+}
+
+model VendasDetalhe {
+    id Int @id @default(autoincrement()) @map("id")
+    vendasHeaderId Int @map("vendas_header_id")
+    itemDocumento Int? @map("item_documento")
+    codigoProdutoDotz String? @map("codigo_produto_dotz") @db.NVarChar(20)
+    descricaoProduto String? @map("descricao_produto") @db.NVarChar(200)
+
+    centroLucro String? @map("centro_lucro") @db.NVarChar(20)
+    centroCusto String? @map("centro_custo") @db.NVarChar(20)
+    valorVenda Decimal? @map("valor_venda") @db.Decimal(19,2) /// Valor total da venda
+
+    quantidadePontos Int? @map("quantidade_pontos") /// Quantidade de pontos dotz
+    precoUnitario Decimal? @map("preco_unitario") @db.Decimal(19,6) /// Valor unitário do ponto dotz
+    custoPontos Decimal? @map("custo_pontos") @db.Decimal(23,6) /// Custo total dos pontos dotz
+
+    aliquotaPis    Decimal? @map("aliquota_pis") @db.Decimal(7,4) // Alíquota PIS em porcentagem 
+    contaCreditoPis String? @map("conta_credito_pis") @db.NVarChar(20) // Id da conta contábil que está cadastrado no SAP
+    contaDebitoPis  String? @map("conta_debito_pis") @db.NVarChar(20) // Id da conta contábil que está cadastrado no SAP
+    valorPis    Decimal? @map("valor_pis") @db.Decimal(12,6)
+
+    aliquotaCofins Decimal? @map("aliquota_cofins") @db.Decimal(7,4) // Alíquota COFINS em porcentagem 
+    contaCreditoCofins String? @map("conta_credito_cofins") @db.NVarChar(20) // Id da conta contábil que está cadastrado no SAP
+    contaDebitoCofins  String? @map("conta_debito_cofins") @db.NVarChar(20) // Id da conta contábil que está cadastrado no SAP
+    valorCofins Decimal? @map("valor_cofins") @db.Decimal(12,6)
+
+    criadoEm      DateTime @default(now()) @map("criado_em")
+    atualizadoEm  DateTime @default(now()) @map("atualizado_em")
+
+    vendasHeader VendasHeader @relation(fields: [vendasHeaderId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+    @@index([vendasHeaderId], map: "idx_vendas_detalhe_header_id")
+    @@index([codigoProdutoDotz], map: "idx_vendas_detalhe_produto")
+    @@map("vendas_detalhe")
+}
+
+/**
+ * Receitas diferidas (Fluxo 5) — uma linha por parcela futura por venda.
+ * status: PENDENTE, INTEGRADO, ERRO_INTEG, REVERSAO_PENDENTE, REVERTIDO, ERRO_REVERT
+ */
+model VendaRecDiferida {
+    id Int @id @default(autoincrement()) @map("id")
+
+    vendasHeaderId Int @map("vendas_header_id")
+
+    periodoDiferimento Int @map("periodo_diferimento") @db.SmallInt /// Sequência 1 a 48 (único junto com vendas_header_id)
+    tipo               String @default("DIFERIDO_TOTAL") @map("tipo") @db.VarChar(25)
+    status             String @default("PENDENTE") @map("status") @db.NVarChar(20)
+
+    ano Int? @map("ano") /// Ano em que o documento foi cadastrado no SAP (sequência reinicia por ano)
+
+    dataEmissao     DateTime? @map("data_emissao") @db.Date /// Data de emissão do documento de origem
+    dataDiferimento DateTime? @map("data_diferimento") @db.Date /// Competência (futura) do reconhecimento
+
+    valorDiferimento Decimal? @map("valor_diferimento") @db.Decimal(15, 2)
+
+    tipoContabilErp  String? @map("tipo_contabil_erp") @db.NVarChar(20) /// Ex.: GL
+    tipoDocumentoErp String? @map("tipo_documento_erp") @db.NVarChar(5) /// Ex.: RD
+
+    contaCredito String? @map("conta_credito") @db.NVarChar(20)
+    contaDebito  String? @map("conta_debito") @db.NVarChar(20)
+
+    centroLucro  String? @map("centro_lucro") @db.NVarChar(20)
+    centroCusto  String? @map("centro_custo") @db.NVarChar(20)
+
+    anoFiscalLancamento Int?      @map("ano_fiscal_lancamento") /// Ano fiscal do lançamento SAP
+    dataIntegracao      DateTime? @map("data_integracao") @db.DateTime2
+    codigoDocumentoErp  String? @map("codigo_documento_erp") @db.NVarChar(20)
+    requestSap          String? @map("request_sap") @db.NVarChar(Max)
+    responseSap         String? @map("response_sap") @db.NVarChar(Max)
+
+    tipoContabilErpReversao  String? @map("tipo_contabil_erp_reversao") @db.NVarChar(20)
+    tipoDocumentoErpReversao String? @map("tipo_documento_erp_reversao") @db.Char(5)
+    contaCreditoReversao     String? @map("conta_credito_reversao") @db.NVarChar(20)
+    contaDebitoReversao      String? @map("conta_debito_reversao") @db.NVarChar(20)
+    centroLucroReversao      String? @map("centro_lucro_reversao") @db.NVarChar(20)
+    centroCustoReversao      String? @map("centro_custo_reversao") @db.NVarChar(20)
+    codigoDocumentoErpReversao String? @map("codigo_documento_erp_reversao") @db.NVarChar(20)
+
+    anoReversao                  Int?      @map("ano_reversao") /// Ano fiscal do lançamento SAP de reversão
+    dataDoLancamentoDaReversao DateTime? @map("data_do_lancamento_da_reversao") @db.Date
+
+    aliquotaPis    Decimal? @map("aliquota_pis") @db.Decimal(7, 4)
+    aliquotaCofins Decimal? @map("aliquota_cofins") @db.Decimal(7, 4)
+    valorPis       Decimal? @map("valor_pis") @db.Decimal(19, 6)
+    valorCofins    Decimal? @map("valor_cofins") @db.Decimal(19, 6)
+    mensagemErro   String?  @map("mensagem_erro") @db.NVarChar(Max)
+
+    criadoEm     DateTime @default(now()) @map("criado_em")
+    atualizadoEm DateTime @default(now()) @updatedAt @map("atualizado_em")
+
+    vendasHeader VendasHeader @relation(fields: [vendasHeaderId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+    @@unique([vendasHeaderId, periodoDiferimento, tipo])
+    @@index([status], map: "idx_venda_rec_diferida_status")
+    @@index([dataDiferimento], map: "idx_venda_rec_diferida_data_dif")
+    @@index([vendasHeaderId], map: "idx_venda_rec_diferida_header_id")
+    @@index([ano], map: "idx_venda_rec_diferida_ano")
+    @@map("venda_rec_diferida")
+}
+
+// =====================================================================
+// XTPG Envio (integração DeepXRT) - Logs de envio Previsto e Realizado
+// HEADER = 1 requisição (lote) enviada à XTPG (request = payload SOAP completo).
+// DETAIL = 1 movimento por linha, com o espelho completo do que foi enviado
+//          + status individual + id_xrt/erro retornados por registro.
+// criado_por / atualizado_por: id do usuário ou 0 (processo/cron de sistema).
+// Sem FK para usuarios pois os registros são gerados por processo automático.
+// =====================================================================
+
+model XtpgEnvioPrevistoHeader {
+    id             Int      @id @default(autoincrement())
+    status         String   @default("PROCESSANDO") @map("status") @db.NVarChar(20) /// PROCESSANDO | ENVIADO | PARCIAL | ERRO
+    totalRegistros Int      @default(0) @map("total_registros") /// Qtd de DETAIL (movimentos) no lote
+    request        String?  @map("request") @db.NVarChar(Max) /// Payload SOAP completo enviado
+    response       String?  @map("response") @db.NVarChar(Max) /// Resposta SOAP bruta da XTPG
+    mensagemErro   String?  @map("mensagem_erro") @db.NVarChar(Max) /// Erro de transporte/lote (quando aplicável)
+
+    criadoEm      DateTime @default(now()) @map("criado_em")
+    criadoPor     Int      @default(0) @map("criado_por")
+    atualizadoEm  DateTime @default(now()) @updatedAt @map("atualizado_em")
+    atualizadoPor Int      @default(0) @map("atualizado_por")
+
+    detalhes XtpgEnvioPrevistoDetail[]
+
+    @@index([status])
+    @@index([criadoEm])
+    @@map("xtpg_envio_previsto_header")
+}
+
+model XtpgEnvioPrevistoDetail {
+    id       Int @id @default(autoincrement())
+    headerId Int @map("xtpg_envio_previsto_header_id")
+
+    status       String  @default("ENVIADO") @map("status") @db.NVarChar(20) /// ENVIADO | ERRO
+    idXrt        String? @map("id_xrt") @db.NVarChar(50) /// UUID retornado pela XTPG
+    mensagemErro String? @map("mensagem_erro") @db.NVarChar(Max) /// Erro retornado pela XTPG p/ este registro
+
+    // Chave de origem (rastreio e write-back futuro p/ saida.asmx)
+    origemTabela   String? @map("origem_tabela") @db.NVarChar(50) /// coluna "Tabela" da view
+    origemDocEntry String? @map("origem_doc_entry") @db.NVarChar(50) /// coluna "DocEntry" da view
+
+    // Espelho do payload enviado ao XTPG (denormalizado p/ validação dos logs)
+    pfjNome              String? @map("pfj_nome") @db.NVarChar(100)
+    pfjCpf               String? @map("pfj_cpf") @db.NVarChar(50)
+    banCodigo            String? @map("ban_codigo") @db.NVarChar(50)
+    ageCodigo            String? @map("age_codigo") @db.NVarChar(50)
+    cntCodigo            String? @map("cnt_codigo") @db.NVarChar(50)
+    tdpCodigo            String? @map("tdp_codigo") @db.NVarChar(50)
+    docPagador           String? @map("doc_pagador") @db.NVarChar(20)
+    pfjCodigo            String? @map("pfj_codigo") @db.NVarChar(50)
+    valorOriginal        String? @map("valor_original") @db.NVarChar(50)
+    valor                String? @map("valor") @db.NVarChar(50)
+    docOrigem            String? @map("doc_origem") @db.NVarChar(100)
+    historico            String? @map("historico") @db.NVarChar(200)
+    contaContabil        String? @map("conta_contabil") @db.NVarChar(50)
+    origemSistema        String? @map("origem_sistema") @db.NVarChar(50)
+    origemPk             String? @map("origem_pk") @db.NVarChar(50)
+    mmiCodigo            String? @map("mmi_codigo") @db.NVarChar(50)
+    informacoesContabeis String? @map("informacoes_contabeis") @db.NVarChar(50)
+    dataCaixa            String? @map("data_caixa") @db.NVarChar(40)
+    dataCompetencia      String? @map("data_competencia") @db.NVarChar(40)
+    dataPagamento        String? @map("data_pagamento") @db.NVarChar(40)
+    dff01                String? @map("dff01") @db.NVarChar(50)
+    dff02                String? @map("dff02") @db.NVarChar(100)
+    moedaCodigo          String? @map("moeda_codigo") @db.NVarChar(10)
+    temperatura          String? @map("temperatura") @db.NVarChar(10)
+
+    criadoEm     DateTime @default(now()) @map("criado_em")
+    atualizadoEm DateTime @default(now()) @updatedAt @map("atualizado_em")
+
+    header XtpgEnvioPrevistoHeader @relation(fields: [headerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+    @@index([headerId])
+    @@index([status])
+    @@index([idXrt])
+    @@map("xtpg_envio_previsto_detail")
+}
+
+model XtpgEnvioRealizadoHeader {
+    id             Int      @id @default(autoincrement())
+    status         String   @default("PROCESSANDO") @map("status") @db.NVarChar(20) /// PROCESSANDO | ENVIADO | PARCIAL | ERRO
+    totalRegistros Int      @default(0) @map("total_registros") /// Qtd de DETAIL (movimentos) no lote
+    request        String?  @map("request") @db.NVarChar(Max) /// Payload SOAP completo enviado
+    response       String?  @map("response") @db.NVarChar(Max) /// Resposta SOAP bruta da XTPG
+    mensagemErro   String?  @map("mensagem_erro") @db.NVarChar(Max) /// Erro de transporte/lote (quando aplicável)
+
+    criadoEm      DateTime @default(now()) @map("criado_em")
+    criadoPor     Int      @default(0) @map("criado_por")
+    atualizadoEm  DateTime @default(now()) @updatedAt @map("atualizado_em")
+    atualizadoPor Int      @default(0) @map("atualizado_por")
+
+    detalhes XtpgEnvioRealizadoDetail[]
+
+    @@index([status])
+    @@index([criadoEm])
+    @@map("xtpg_envio_realizado_header")
+}
+
+model XtpgEnvioRealizadoDetail {
+    id       Int @id @default(autoincrement())
+    headerId Int @map("xtpg_envio_realizado_header_id")
+
+    status       String  @default("ENVIADO") @map("status") @db.NVarChar(20) /// ENVIADO | ERRO
+    idXrt        String? @map("id_xrt") @db.NVarChar(50) /// UUID retornado pela XTPG
+    mensagemErro String? @map("mensagem_erro") @db.NVarChar(Max) /// Erro retornado pela XTPG p/ este registro
+
+    // Chave de origem (rastreio e write-back futuro p/ saida.asmx)
+    origemTabela   String? @map("origem_tabela") @db.NVarChar(50) /// coluna "Tabela" da view
+    origemDocEntry String? @map("origem_doc_entry") @db.NVarChar(50) /// coluna "DocEntry" da view
+
+    // Espelho do payload enviado ao XTPG (denormalizado p/ validação dos logs)
+    pfjNome              String? @map("pfj_nome") @db.NVarChar(100)
+    pfjCpf               String? @map("pfj_cpf") @db.NVarChar(50)
+    banCodigo            String? @map("ban_codigo") @db.NVarChar(50)
+    ageCodigo            String? @map("age_codigo") @db.NVarChar(50)
+    cntCodigo            String? @map("cnt_codigo") @db.NVarChar(50)
+    tdpCodigo            String? @map("tdp_codigo") @db.NVarChar(50)
+    docPagador           String? @map("doc_pagador") @db.NVarChar(20)
+    pfjCodigo            String? @map("pfj_codigo") @db.NVarChar(50)
+    valorOriginal        String? @map("valor_original") @db.NVarChar(50)
+    valor                String? @map("valor") @db.NVarChar(50)
+    docOrigem            String? @map("doc_origem") @db.NVarChar(100)
+    historico            String? @map("historico") @db.NVarChar(200)
+    contaContabil        String? @map("conta_contabil") @db.NVarChar(50)
+    origemSistema        String? @map("origem_sistema") @db.NVarChar(50)
+    origemPk             String? @map("origem_pk") @db.NVarChar(50)
+    mmiCodigo            String? @map("mmi_codigo") @db.NVarChar(50)
+    informacoesContabeis String? @map("informacoes_contabeis") @db.NVarChar(50)
+    dataCaixa            String? @map("data_caixa") @db.NVarChar(40)
+    dataCompetencia      String? @map("data_competencia") @db.NVarChar(40)
+    dataPagamento        String? @map("data_pagamento") @db.NVarChar(40)
+    dff01                String? @map("dff01") @db.NVarChar(50)
+    dff02                String? @map("dff02") @db.NVarChar(100)
+    moedaCodigo          String? @map("moeda_codigo") @db.NVarChar(10)
+    temperatura          String? @map("temperatura") @db.NVarChar(10)
+
+    criadoEm     DateTime @default(now()) @map("criado_em")
+    atualizadoEm DateTime @default(now()) @updatedAt @map("atualizado_em")
+
+    header XtpgEnvioRealizadoHeader @relation(fields: [headerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+    @@index([headerId])
+    @@index([status])
+    @@index([idXrt])
+    @@map("xtpg_envio_realizado_detail")
+}
+
+// =====================================================================
+// SAÍDA XTPG (DTZ-227): movimentos contábeis do XTPG -> LCM no S/4.
+// 1 Header por PAR_CONTABIL (= 1 LCM). Status como ID textual + descrição
+// (NÃO o ENUM E/P/S da Entrada). Ver DTZ-227_Saida_XTPG_LCM_S4.md.
+// =====================================================================
+model XtpgSaidaHeader {
+    id Int @id(map: "PK_xtpg_saida_header") @default(autoincrement())
+
+    ciaId       Int?    @map("cia_id") /// cia.id interno (quando resolvido)
+    ciaSap      String  @map("cia_sap") @db.NVarChar(50) /// PFJ_CODIGO (origem)
+    parContabil String  @map("parcontabil") @db.NVarChar(50)
+    /// Chave anti-duplicidade = cia_sap + parcontabil
+    chaveValidacao String @map("chave_validacao") @db.NVarChar(120)
+    codigoSap   String? @map("codigo_sap") @db.NVarChar(50) /// nº do LCM gerado no S/4
+
+    // Fila SAP (createJournalEntry)
+    statusSap          String    @default("AGUARDANDO") @map("status_sap") @db.NVarChar(20) /// AGUARDANDO | INTEGRADO | ERRO
+    descricaoSap       String?   @map("descricao_sap") @db.NVarChar(Max)
+    dataIntegracaoSap  DateTime? @map("data_integracao_sap")
+    requestSap         String?   @map("request_sap") @db.NVarChar(Max)
+    responseSap        String?   @map("response_sap") @db.NVarChar(Max)
+
+    // Fila XTPG (MudarStatusMovimentoParContabil)
+    statusXtpg         String    @default("AGUARDANDO") @map("status_xtpg") @db.NVarChar(20) /// AGUARDANDO | INTEGRADO | ERRO
+    descricaoXtpg      String?   @map("descricao_xtpg") @db.NVarChar(Max)
+    dataIntegracaoXtpg DateTime? @map("data_integracao_xtpg")
+    requestXtpg        String?   @map("request_xtpg") @db.NVarChar(Max)
+    responseXtpg       String?   @map("response_xtpg") @db.NVarChar(Max)
+    criticaXtpg        String?   @map("critica_xtpg") @db.NVarChar(250) /// devolvido ao XTPG (= codigo_sap no sucesso); código trunca em 250
+
+    totalRegistros Int @default(0) @map("total_registros")
+
+    criadoEm     DateTime @default(dbgenerated("sysdatetime()")) @map("criado_em")
+    atualizadoEm DateTime @default(dbgenerated("sysdatetime()")) @updatedAt @map("atualizado_em")
+
+    detalhes XtpgSaidaDetail[]
+
+    @@index([chaveValidacao], map: "IX_xtpg_saida_header_chave")
+    @@index([statusSap], map: "IX_xtpg_saida_header_ssap")
+    @@index([statusXtpg], map: "IX_xtpg_saida_header_sxtpg")
+    @@index([criadoEm], map: "IX_xtpg_saida_header_criado")
+    @@map("xtpg_saida_header")
+}
+
+model XtpgSaidaDetail {
+    id       Int @id(map: "PK_xtpg_saida_detail") @default(autoincrement())
+    headerId Int @map("xtpg_saida_header_id")
+
+    // Espelho dos campos do movimento (response XTPG) usados no LCM
+    mvtContador      String? @map("mvt_contador") @db.NVarChar(50)
+    contaContabil    String? @map("conta_contabil") @db.NVarChar(50) /// conta B1 (origem XTPG)
+    contaContabilS4  String? @map("conta_contabil_s4") @db.NVarChar(30) /// conta S/4 resolvida (contas_contabeis.gl_account_b1_xtpg)
+    creditoDebito    String? @map("credito_debito") @db.NVarChar(1)
+    valor            String? @map("valor") @db.NVarChar(50)
+    historico        String? @map("historico") @db.NVarChar(Max)
+    indCodigo        String? @map("ind_codigo") @db.NVarChar(20) /// moeda de origem (ex.: BRA-BRL/BRL)
+    banCodigo        String? @map("ban_codigo") @db.NVarChar(50)
+    ageCodigo        String? @map("age_codigo") @db.NVarChar(50)
+    cntCodigo        String? @map("cnt_codigo") @db.NVarChar(50)
+    houseBank        String? @map("house_bank") @db.NVarChar(10) /// resolvido no de-para contas_bancarias
+    houseBankAccount String? @map("house_bank_account") @db.NVarChar(20)
+
+    criadoEm     DateTime @default(dbgenerated("sysdatetime()")) @map("criado_em")
+    atualizadoEm DateTime @default(dbgenerated("sysdatetime()")) @updatedAt @map("atualizado_em")
+
+    header XtpgSaidaHeader @relation(fields: [headerId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_xtpg_saida_detail_header")
+
+    @@index([headerId], map: "IX_xtpg_saida_detail_header")
+    @@map("xtpg_saida_detail")
+}
+
+model IntegrationExecutionLog {
+    id             Int       @id(map: "PK_integration_execution_log") @default(autoincrement()) @map("id")
+    integrationKey String    @map("integration_key") @db.NVarChar(80)
+    triggerType    String    @map("trigger_type") @db.NVarChar(12)
+    status         String    @map("status") @db.NVarChar(12)
+    startedAt      DateTime  @map("started_at") @db.DateTime2
+    finishedAt     DateTime? @map("finished_at") @db.DateTime2
+    totalReceived  Int?      @map("total_received")
+    totalInserted  Int?      @map("total_inserted")
+    totalUpdated   Int?      @map("total_updated")
+    errorMessage   String?   @map("error_message") @db.NVarChar(Max)
+    triggeredBy    String?   @map("triggered_by") @db.NVarChar(120)
+
+    @@index([integrationKey, startedAt(sort: Desc)], map: "IX_integration_execution_log_key_started")
+    @@map("integration_execution_log")
+}

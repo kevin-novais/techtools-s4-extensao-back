@@ -1,0 +1,99 @@
+services:
+  K8sExtensaoTemplate.API.Private:
+    name: techtools-s4-extensao-back-api-private
+    alias: api-private
+    pathType: ImplementationSpecific
+    path: /techtools-s4-extensao-back/api/private
+    type: api
+    portAlias: http
+    port: 8575
+    protocol: TCP
+    resources:
+      requests:
+        cpu: 500m
+        memory: 512Mi
+      limits:
+        cpu: 1000m
+        memory: 1024Mi
+    apiProbes:
+      enabled: false
+    rpcProbes:
+      enabled: false
+    replicas:
+      enabled: false
+      desired: 1
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    nodeAffinity:
+      enabled: true
+      matchExpressions:
+        key: node_group
+        value: application
+    service:
+      enabled: true
+      type: ClusterIP
+    hpa:
+      enabled: true
+      min: 1
+      max: 3
+      cpu:
+        enabled: true
+        averageUtilization: 80
+      memory:
+        enabled: true
+        averageUtilization: 80
+
+  K8sExtensaoTemplate.Consumer.Generic:
+    name: techtools-s4-extensao-back-consumer
+    alias: consumer
+    command: npm
+    args:
+      - run
+      - start:workers
+    portAlias: http
+    port: 80
+    type: consumer
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    replicas:
+      enabled: false
+      desired: 1
+    nodeAffinity:
+      enabled: false
+      matchExpressions:
+        key: node_group
+        value: application
+    hpa:
+      enabled: true
+      min: 1
+      max: 3
+      cpu:
+        enabled: true
+        averageUtilization: 80
+      memory:
+        enabled: true
+        averageUtilization: 80
+
+ingressPrivate:
+  enabled: true
+  dns: private.techtools.uat.k8s.dotz.com.br
+  ingressTlsSecret: private-api-techtools-cert
+  ingressclassname: kong-internal
+  stripPath: true
+  preserveHost: true
+  tls:
+    enabled: false
+
+environment: uat
+
+configmap:
+  enabled: true
+  data:
+    TZ: America/Sao_Paulo
+
+secret:
+  enabled: true
+  data:
+    JKS_ENV: uat

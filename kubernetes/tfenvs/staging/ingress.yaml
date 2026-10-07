@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: techtools-s4-extensao-back
+  namespace: techtools-s4-extensao-back
+  annotations:
+    konghq.com/https-redirect-status-code: '301'
+    konghq.com/preserve-host: 'true'
+    konghq.com/strip-path: 'true'
+    konghq.com/protocols: https
+spec:
+  ingressClassName: kong-external
+  tls:
+    - hosts:
+        - techtools.uat.k8s.dotz.com.br
+      secretName: public-api-techtools-cert
+  rules:
+    - host: techtools.uat.k8s.dotz.com.br
+      http:
+        paths:
+          - path: /techtools-s4-extensao-back/api/private/webhooks/accountfy
+            pathType: Prefix
+            backend:
+              service:
+                name: techtools-s4-extensao-back-api-private
+                port:
+                  number: 8575

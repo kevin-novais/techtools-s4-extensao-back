@@ -1,0 +1,38 @@
+services:
+  s4-extensao-dotz-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: s4_extensao_dotz_api
+    image: s4_extensao_dotz_api:latest
+    command: sh -c "npx prisma migrate deploy --schema=./prisma/s4_extensao_dotz/schema.prisma && npm run start"
+    env_file:
+      - .env
+    restart: always
+    ports:
+      - "5858:5858"
+    networks:
+      - s4_extensao_dotz_network_dev
+    volumes:
+      - /home/action/s4-extensao-dotz-bucket:/app/storage
+
+  s4-extensao-dotz-consumer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: s4_extensao_dotz_consumer
+    image: s4_extensao_dotz_consumer:latest
+    command: ["npm", "run", "start:workers"]
+    env_file:
+      - .env
+    restart: always
+    networks:
+      - s4_extensao_dotz_network_dev
+    volumes:
+      - /home/action/s4-extensao-dotz-bucket:/app/storage
+
+networks:
+  s4_extensao_dotz_network_dev:
+    external: true

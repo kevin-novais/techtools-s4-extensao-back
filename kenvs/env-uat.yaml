@@ -1,0 +1,177 @@
+APPNAME: "techtools-s4-extensao-back"
+JKS_GOOGLE_PROJECTID: "dotz-techtools-uat"
+
+# -- Configurações de rede da aplicação web.
+PORT: "8575"
+CORS_ORIGIN: "https://uat-s4-extensao.dotz.com.br"
+APP_URL: "https://uat-s4-extensao.dotz.com.br"
+API_URL: "https://private.techtools.uat.k8s.dotz.com.br/techtools-s4-extensao-back/api/private"
+HEALTH_CHECK_ONLY: "false"
+
+# -- Configurações de rede da aplicação web.
+GCS_BUCKET_NAME: "uat-techtools-s4-extensao-back"
+GCS_PROJECT_ID: "dotz-techtools-uat"
+
+GCS_ROMANEIO_SUBFOLDER: "troca/romaneio"
+GCS_POS_SUBFOLDER: "troca/pos"
+
+# -- Autenticação e segurança.
+# Configurações JWT
+# ACCESS_TOKEN_SECRET: [secret]
+ACCESS_TOKEN_EXPIRATION: "1h"
+# Configuração de criptografia para dados sensíveis, como tokens de autenticação e informações de pagamento. É importante que a ENCRYPTION_KEY seja mantida em segredo e tenha um comprimento adequado (pelo menos 32 caracteres) para garantir a segurança dos dados criptografados.
+# ENCRYPTION_KEY: [secret]
+
+# -- Logs
+LOG_LEVEL: "debug"
+LOG_MAX_SIZE: "20m"
+LOG_MAX_FILES: "14d"
+LOG_ZIPPED_ARCHIVE: "false"
+
+# -- Configurações Elastic APM
+ELASTIC_APM_SERVER_URL: "http://elastic.uat.noverde.com:8200"
+ELASTIC_APM_ENVIRONMENT: "uat"
+
+# -- Configurações do Banco de Dados
+DATABASE_CONNECTION_LIMIT: "5"
+DATABASE_POOL_TIMEOUT: "10"
+RELATORIO_ALLOWED_DATABASES: "s4_extensao_dotz,Dotz_Stage_Trocas"
+
+# ## Database
+# DATABASE_URL: [secret]
+# DOTZ_STAGE_DATABASE_URL: [secret]
+# RELATORIO_READONLY_DATABASE_URL: [secret]
+
+# -- Configurações da Fila
+# RABBITMQ_URL: [secret]
+RABBITMQ_PREFETCH: "1"
+RABBITMQ_PREFETCH_DOCUMENTO: "1"
+RABBITMQ_PREFETCH_SAP: "1"
+RABBITMQ_PREFETCH_VENDAS: "1"
+RABBITMQ_PREFETCH_VENDA_REC_DIFERIDA: "1"
+
+# -- Configurações de envio de Email
+
+# Dotz HML
+EMAIL_HOST: "email-smtp.us-east-1.amazonaws.com"
+EMAIL_PORT: "587"
+EMAIL_USER: "AKIAWDZKCQAGYVT3JZCV"
+# EMAIL_PASSWORD: [secret]
+EMAIL_FROM: "faturamento.uat@dotz.com"
+
+# -- Integração S4 HANA Cloud.
+# Configurações de conexão com o S4 HANA Cloud.
+
+# Dotz HML
+S4_HANA_CLOUD_BASE_URL: "https://integration-suite-dev-qa-dotz.it-cpi008-rt.cfapps.br10.hana.ondemand.com/http/qas"
+S4_HANA_CLOUD_AUTH_URL: "https://integration-suite-dev-qa-dotz.authentication.br10.hana.ondemand.com/oauth/token"
+# S4_HANA_CLOUD_CLIENT_ID: [secret]
+# S4_HANA_CLOUD_CLIENT_SECRET: [secret]
+S4_HANA_CLOUD_GRANT_TYPE: "client_credentials"
+S4_HANA_CLOUD_USER_NAME: "BTP_USER"
+
+# Funcionalidade de sincronização de parceiros/fornecedores do SAP, para manter o cadastro atualizado e evitar erros de integração devido a dados desatualizados. O cron é configurado para rodar no intervalo CRON_SYNC_SAP_PARTNERS, buscando alterações dos últimos DAYS_TO_SYNC_SAP_PARTNERS dias para garantir que nenhuma atualização seja perdida, mesmo que haja falhas temporárias na execução do cron.
+CRON_SYNC_SAP_PARTNERS_ENABLED: "true"
+CRON_SYNC_SAP_PARTNERS: "*/15 * * * *" # Rodar a cada 15 minutos
+DAYS_TO_SYNC_SAP_PARTNERS: "2" # 2 dias
+# Funcionalidade de sincronização de registros contábeis, essencial para manter os dados financeiros atualizados e garantir a consistência entre os sistemas. O cron é configurado para rodar no intervalo CRON_SYNC_REGISTROS_CONTABEIS.
+CRON_SYNC_REGISTROS_CONTABEIS_ENABLED: "true"
+CRON_SYNC_REGISTROS_CONTABEIS: "*/10 * * * *" # cada 10 minutos
+SYNC_REGISTROS_CONTABEIS_PAGE_SIZE: "200"
+
+# -- Módulo de integração com Accountfy
+# Configuração para acesso de serviços externos á API.
+# APP_API_KEY: [secret]
+
+# -- Módulo de integração com VEXPENSES
+VEXPENSES_BASE_URL: "https://api.vexpenses.com/v2"
+# VEXPENSES_TOKEN_API: [secret]
+VEXPENSES_DIAS_PASSADOS: "7"
+
+# Funcionalidade de importação de relatórios aprovados do Vexpenses, para garantir que as despesas sejam processadas e reembolsadas em tempo hábil. O cron é configurado para rodar no intervalo CRON_VEXPENSES_APPROVED_REPORTS, buscando relatórios aprovados nos últimos VEXPENSES_DIAS_PASSADOS dias para garantir que nenhuma despesa aprovada seja perdida, mesmo que haja falhas temporárias na execução do cron.
+CRON_VEXPENSES_APPROVED_REPORTS_ENABLED: "true"
+CRON_VEXPENSES_APPROVED_REPORTS: "*/15 * * * *" # cada 15 minutos
+
+# Funcionalidade de liquidação de pagamentos do Vexpenses por meio de compensação, para garantir que os pagamentos sejam processados de forma eficiente e que as despesas sejam reembolsadas em tempo hábil. O cron é configurado para rodar no intervalo CRON_VEXPENSES_PAYMENT_BY_CLEARING, buscando despesas aprovadas nos últimos VEXPENSES_DIAS_PASSADOS dias para garantir que nenhuma despesa aprovada seja perdida, mesmo que haja falhas temporárias na execução do cron.
+CRON_VEXPENSES_PAYMENT_BY_CLEARING_ENABLED: "true"
+CRON_VEXPENSES_PAYMENT_BY_CLEARING: "*/15 * * * *" # cada 15 minutos
+
+# -- Módulo de integração com BANKPLUS/INVENT
+BANKPLUS_INVENT_BASE_URL: "https://bankplus-cobranca-stg.invent.app.br"
+BANKPLUS_INVENT_USERNAME: "tj51b42z672k2iv6l35o59olcc"
+# BANKPLUS_INVENT_PASSWORD: [secret]                           # Senha de autenticação BankPlus
+BANKPLUS_INVENT_APLICACAO: "8.BankPlus.Cobranca"           # Identificador da aplicação dentro do BankPlus
+BANKPLUS_INVENT_TENANT_ID: "DOTZ"                          # Tenant/empresa no BankPlus
+
+# XTPG
+XTPG_SAIDA_API_BASE_URL: "https://apih.deepxrtbr.com.br"
+XTPG_SAIDA_API_ENDPOINT: "/dotz/SOAP_API/ITF/Saida.asmx"
+XTPG_SAIDA_STATUS_BUSCA: "I"
+XTPG_SAIDA_STATUS_SUCESSO: "C"
+XTPG_SAIDA_STATUS_ERRO: "E"
+CRON_XTPG_SAIDA: "0 */5 * * *"
+CRON_XTPG_SAIDA_ENABLED: "true"
+XTPG_SAIDA_ENVIO_SAP_HABILITADO: "true"
+
+## -- Módulo de integração Analyzer vendas
+# Funcionalidade de processamento de vendas pendentes, para garantir que as vendas sejam processadas e finalizadas em tempo hábil. O cron é configurado para rodar no intervalo CRON_PROCESS_VENDAS_PENDENTES, buscando vendas pendentes nos últimos DAYS_TO_PROCESS_VENDAS_PENDENTES dias para garantir que nenhuma venda pendente seja perdida, mesmo que haja falhas temporárias na execução do cron.
+CRON_PROCESS_VENDAS_PENDENTES_ENABLED: "true"
+CRON_PROCESS_VENDAS_PENDENTES: "*/30 * * * *" # cada 30 minutos
+CRON_PROCESS_VENDAS_INTEGRACAO_ANALIZER_ENABLED: "true"
+CRON_PROCESS_VENDAS_INTEGRACAO_ANALIZER: "*/30 * * * *" # cada 30 minutos
+CRON_PROCESS_VENDAS_INTEGRACAO_ANALIZER_BATCH_SIZE: "100"
+
+CRON_PROCESS_VENDA_REC_DIFERIDA_PENDENTES_ENABLED: "true"
+CRON_PROCESS_VENDA_REC_DIFERIDA_PENDENTES: "0 * * * *" # cada hora
+
+CRON_PROCESS_VENDA_REC_DIFERIDA_REVERSAO_ENABLED: "true"
+CRON_PROCESS_VENDA_REC_DIFERIDA_REVERSAO: "3 */3 * * *"
+
+CRON_DETECT_VENDA_REC_DIFERIDA_REVERSAO_SAP_ENABLED: "true"
+CRON_DETECT_VENDA_REC_DIFERIDA_REVERSAO_SAP: "15 */3 * * *" # 15min após o sync de registros contábeis
+
+# Detecta no SAP o cancelamento (JE de reversão) da NF de um romaneio de troca: cancela o romaneio
+# e reabre os pedidos no Analyzer, para que possam ser vinculados a um novo romaneio/NF.
+CRON_DETECT_TROCA_REVERSAO_SAP_ENABLED: "true"
+CRON_DETECT_TROCA_REVERSAO_SAP: "20 */3 * * *" # 20min após o sync de registros contábeis
+
+CRON_CONSULTAR_BOLETO_ENABLED: "true"
+CRON_CONSULTAR_BOLETO: "*/15 * * * *" # cada 15 minutos
+
+CRON_ENVIAR_VENDAS_EMAIL_ENABLED: "true"
+CRON_ENVIAR_VENDAS_EMAIL: "*/15 * * * *" # cada 15 minutos
+# Configuração de email para envio de notificações de vendas, para garantir que as partes interessadas sejam informadas sobre o status das vendas e possam tomar as ações necessárias. O email configurado em DOTZ_EMAIL_VENDAS_RECEBER receberá as notificações de vendas, e o cron é configurado para rodar no intervalo CRON_ENVIAR_VENDAS_EMAIL.
+DOTZ_EMAIL_CONTAS_RECEBER: "lucas.aroucha@actionsys.com.br"
+
+## -- Módulo de integração Analyzer trocas
+DOTZ_EMAIL_TROCAS: "lucas.aroucha@actionsys.com.br"
+
+# --- Endpoint XTPG (HOMOLOG por padrão) ---
+XTPG_API_BASE_URL: "https://apih.deepxrtbr.com.br"
+XTPG_API_ENDPOINT: "/dotz/SOAP_API/ITF/Entrada.asmx"
+XTPG_API_TIMEOUT_MS: "120000"
+# XTPG_API_USUARIO:
+# XTPG_API_SENHA:
+ 
+## -- Módulo de integração XTPG
+# Views (banco s4_extensao_dotz) 
+XTPG_VIEW_DATASOURCE: "s4"
+XTPG_VIEW_PREVISTO: "XRT_SendPrevPagto"
+XTPG_VIEW_REALIZADO: "XRT_SendFlux"
+
+# Cron aplicar regras para definir o item do Fluxo Caixa antes de enviar para o XTPG.
+CRON_CLASSIFICACAO_FLUXO_CAIXA_XTPG_ENABLED: "true"
+CLASSIFICACAO_FLUXO_CAIXA_XTPG_BATCH_SIZE: "500"
+CRON_CLASSIFICACAO_FLUXO_CAIXA_XTPG: "0 */5 * * *"
+ 
+# Cron SendPrev
+CRON_XTPG_SEND_PREV_ENABLED: "true"   # mudar p/ true para ativar
+CRON_XTPG_SEND_PREV: "*/10 * * * *" # cada 10 minutos
+XTPG_SEND_PREV_BATCH_SIZE: "2"
+XTPG_SEND_PREV_MAX_PER_RUN: "0"
+
+# Cron SendFlux
+CRON_XTPG_SEND_FLUX_ENABLED: "true"   # mudar p/ true para ativar
+CRON_XTPG_SEND_FLUX: "*/10 * * * *" # cada 10 minutos
+XTPG_SEND_FLUX_BATCH_SIZE: "2"
+XTPG_SEND_FLUX_MAX_PER_RUN: "0"
